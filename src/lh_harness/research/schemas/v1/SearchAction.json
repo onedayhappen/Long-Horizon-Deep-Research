@@ -1,0 +1,116 @@
+{
+  "$defs": {
+    "QuerySpec": {
+      "additionalProperties": false,
+      "properties": {
+        "country_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Country Code"
+        },
+        "language": {
+          "title": "Language",
+          "type": "string"
+        },
+        "max_results": {
+          "exclusiveMinimum": 0,
+          "title": "Max Results",
+          "type": "integer"
+        },
+        "query_id": {
+          "title": "Query Id",
+          "type": "string"
+        },
+        "question_id": {
+          "title": "Question Id",
+          "type": "string"
+        },
+        "source_class_targets": {
+          "items": {
+            "enum": [
+              "primary_official",
+              "primary_study",
+              "secondary"
+            ],
+            "type": "string"
+          },
+          "title": "Source Class Targets",
+          "type": "array"
+        },
+        "strategy_family": {
+          "enum": [
+            "primary",
+            "independent",
+            "counterevidence"
+          ],
+          "title": "Strategy Family",
+          "type": "string"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "query_id",
+        "question_id",
+        "text",
+        "strategy_family",
+        "language",
+        "country_code",
+        "source_class_targets",
+        "max_results"
+      ],
+      "title": "QuerySpec",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "acceptance_check_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Acceptance Check Ids",
+      "type": "array"
+    },
+    "kind": {
+      "const": "search",
+      "default": "search",
+      "title": "Kind",
+      "type": "string"
+    },
+    "max_external_calls": {
+      "exclusiveMinimum": 0,
+      "title": "Max External Calls",
+      "type": "integer"
+    },
+    "query_plan": {
+      "items": {
+        "$ref": "#/$defs/QuerySpec"
+      },
+      "minItems": 1,
+      "title": "Query Plan",
+      "type": "array"
+    },
+    "question_id": {
+      "title": "Question Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "question_id",
+    "query_plan",
+    "acceptance_check_ids",
+    "max_external_calls"
+  ],
+  "title": "SearchAction",
+  "type": "object"
+}

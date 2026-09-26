@@ -1,0 +1,30 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "reason": {
+      "minLength": 1,
+      "title": "Reason",
+      "type": "string"
+    },
+    "source_class_verified": {
+      "title": "Source Class Verified",
+      "type": "boolean"
+    },
+    "verdict": {
+      "enum": [
+        "supported",
+        "not_supported",
+        "uncertain"
+      ],
+      "title": "Verdict",
+      "type": "string"
+    }
+  },
+  "required": [
+    "verdict",
+    "reason",
+    "source_class_verified"
+  ],
+  "title": "EvidenceAuditVerdict",
+  "type": "object"
+}

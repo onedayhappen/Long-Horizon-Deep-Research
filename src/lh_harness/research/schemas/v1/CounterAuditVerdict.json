@@ -1,0 +1,25 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "reason": {
+      "minLength": 1,
+      "title": "Reason",
+      "type": "string"
+    },
+    "verdict": {
+      "enum": [
+        "no_objection",
+        "found_issue",
+        "inconclusive"
+      ],
+      "title": "Verdict",
+      "type": "string"
+    }
+  },
+  "required": [
+    "verdict",
+    "reason"
+  ],
+  "title": "CounterAuditVerdict",
+  "type": "object"
+}

@@ -1,0 +1,212 @@
+{
+  "$defs": {
+    "OutlineNode": {
+      "additionalProperties": false,
+      "properties": {
+        "active": {
+          "default": true,
+          "title": "Active",
+          "type": "boolean"
+        },
+        "claim_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Claim Ids",
+          "type": "array"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "notes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Notes",
+          "type": "array"
+        },
+        "parent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Id"
+        },
+        "replaced_by": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Replaced By",
+          "type": "array"
+        },
+        "requirement_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Requirement Ids",
+          "type": "array"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "requirement_ids"
+      ],
+      "title": "OutlineNode",
+      "type": "object"
+    },
+    "OutlineOperation": {
+      "additionalProperties": false,
+      "properties": {
+        "claim_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Claim Ids",
+          "type": "array"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "kind": {
+          "enum": [
+            "add",
+            "split",
+            "merge",
+            "move",
+            "narrow_claim",
+            "add_counterview",
+            "mark_gap",
+            "retire_node"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "node_id": {
+          "title": "Node Id",
+          "type": "string"
+        },
+        "nodes": {
+          "items": {
+            "$ref": "#/$defs/OutlineNode"
+          },
+          "title": "Nodes",
+          "type": "array"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "requirement_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Requirement Ids",
+          "type": "array"
+        },
+        "target_node_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Target Node Ids",
+          "type": "array"
+        },
+        "target_parent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Parent Id"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        }
+      },
+      "required": [
+        "kind",
+        "node_id",
+        "reason",
+        "requirement_ids"
+      ],
+      "title": "OutlineOperation",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "base_outline_version": {
+      "exclusiveMinimum": 0,
+      "title": "Base Outline Version",
+      "type": "integer"
+    },
+    "kind": {
+      "const": "patch_outline",
+      "default": "patch_outline",
+      "title": "Kind",
+      "type": "string"
+    },
+    "operations": {
+      "items": {
+        "$ref": "#/$defs/OutlineOperation"
+      },
+      "minItems": 1,
+      "title": "Operations",
+      "type": "array"
+    },
+    "reason_refs": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Reason Refs",
+      "type": "array"
+    }
+  },
+  "required": [
+    "base_outline_version",
+    "operations",
+    "reason_refs"
+  ],
+  "title": "OutlinePatchAction",
+  "type": "object"
+}

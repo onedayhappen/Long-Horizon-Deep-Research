@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "contract_id": "fictional-unknown-empty",
+  "version": 1,
+  "question": "虚构系统 X 是否有独立性能测量？",
+  "scope": {"subjects": ["虚构系统 X"], "regions": [], "versions": [], "include": ["独立性能测量"], "exclude": []},
+  "as_of": "2026-09-01T00:00:00Z",
+  "requirements": [{
+    "id": "R1", "question": "说明是否找到独立性能测量",
+    "priority": "must", "weight": 1, "allow_unknown": true, "unknown_check_ids": ["R1.challenge"],
+    "acceptance_checks": [
+      {"check_id": "R1.support", "code": "has_current_support", "stage": "research", "params": {"claim_kinds": ["factual"], "min_claims": 1}, "reason": "需要可定位原始测量"},
+      {"check_id": "R1.challenge", "code": "challenge_attempted", "stage": "research", "params": {"families": ["independent"], "min_successful_queries": 1}, "reason": "需实际尝试独立来源查询"},
+      {"check_id": "R1.answer", "code": "answer_in_report", "stage": "delivery", "params": {"require_limitation_disclosure": true}, "reason": "应明确说明搜索边界"}
+    ]
+  }],
+  "output_contract": {"language": "zh-CN", "format": "markdown", "required_sections": ["结论", "依据与限制"], "max_characters": 6000},
+  "stop_policy": {"should_weighted_fraction": 0.90}
+}

@@ -1,0 +1,252 @@
+{
+  "$defs": {
+    "BoundedUnknownFact": {
+      "additionalProperties": false,
+      "properties": {
+        "coverage_assessment_version_id": {
+          "title": "Coverage Assessment Version Id",
+          "type": "string"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "investigation_refs": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Investigation Refs",
+          "type": "array"
+        },
+        "kind": {
+          "const": "bounded_unknown",
+          "default": "bounded_unknown",
+          "title": "Kind",
+          "type": "string"
+        },
+        "requirement_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Requirement Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "requirement_ids",
+        "coverage_assessment_version_id",
+        "investigation_refs"
+      ],
+      "title": "BoundedUnknownFact",
+      "type": "object"
+    },
+    "DisputeFact": {
+      "additionalProperties": false,
+      "properties": {
+        "conflict_version_id": {
+          "title": "Conflict Version Id",
+          "type": "string"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 2,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "dispute",
+          "default": "dispute",
+          "title": "Kind",
+          "type": "string"
+        },
+        "requirement_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Requirement Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "requirement_ids",
+        "conflict_version_id",
+        "evidence_ids"
+      ],
+      "title": "DisputeFact",
+      "type": "object"
+    },
+    "DraftParagraph": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "sentences": {
+          "items": {
+            "$ref": "#/$defs/DraftSentence"
+          },
+          "title": "Sentences",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "sentences"
+      ],
+      "title": "DraftParagraph",
+      "type": "object"
+    },
+    "DraftSentence": {
+      "additionalProperties": false,
+      "properties": {
+        "fact_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Fact Ids",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "text",
+        "fact_ids"
+      ],
+      "title": "DraftSentence",
+      "type": "object"
+    },
+    "FactualFact": {
+      "additionalProperties": false,
+      "properties": {
+        "claim_version_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Claim Version Ids",
+          "type": "array"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "factual",
+          "default": "factual",
+          "title": "Kind",
+          "type": "string"
+        },
+        "requirement_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Requirement Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "requirement_ids",
+        "claim_version_ids",
+        "evidence_ids"
+      ],
+      "title": "FactualFact",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "facts": {
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "bounded_unknown": "#/$defs/BoundedUnknownFact",
+            "dispute": "#/$defs/DisputeFact",
+            "factual": "#/$defs/FactualFact"
+          },
+          "propertyName": "kind"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/FactualFact"
+          },
+          {
+            "$ref": "#/$defs/BoundedUnknownFact"
+          },
+          {
+            "$ref": "#/$defs/DisputeFact"
+          }
+        ]
+      },
+      "title": "Facts",
+      "type": "array"
+    },
+    "open_questions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Open Questions",
+      "type": "array"
+    },
+    "outline_version": {
+      "exclusiveMinimum": 0,
+      "title": "Outline Version",
+      "type": "integer"
+    },
+    "paragraphs": {
+      "items": {
+        "$ref": "#/$defs/DraftParagraph"
+      },
+      "title": "Paragraphs",
+      "type": "array"
+    },
+    "revision": {
+      "minimum": 0,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "section_id": {
+      "title": "Section Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "section_id",
+    "revision",
+    "outline_version",
+    "paragraphs",
+    "facts",
+    "open_questions"
+  ],
+  "title": "DraftSection",
+  "type": "object"
+}

@@ -1,0 +1,1 @@
+{"finish_reason":"stop","model_profile_hash":"replay-fixture-v1","provider_request_id":null,"raw_text":"{\"dimensions_checked\":[\"独立测量\",\"反例\",\"边界\"],\"missing_questions\":[],\"review_status\":\"pass\"}","usage":{"basis":"provider","cost":null,"input_tokens":1,"output_tokens":1}}

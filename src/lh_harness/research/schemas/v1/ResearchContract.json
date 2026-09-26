@@ -1,0 +1,468 @@
+{
+  "$defs": {
+    "AcceptanceCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "check_id": {
+          "minLength": 1,
+          "title": "Check Id",
+          "type": "string"
+        },
+        "code": {
+          "$ref": "#/$defs/CheckCode"
+        },
+        "params": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SupportParams"
+            },
+            {
+              "$ref": "#/$defs/ObservationParams"
+            },
+            {
+              "$ref": "#/$defs/AttributionParams"
+            },
+            {
+              "$ref": "#/$defs/FreshnessParams"
+            },
+            {
+              "$ref": "#/$defs/RecomputeParams"
+            },
+            {
+              "$ref": "#/$defs/ChallengeParams"
+            },
+            {
+              "$ref": "#/$defs/ConflictParams"
+            },
+            {
+              "$ref": "#/$defs/AnswerParams"
+            }
+          ],
+          "title": "Params"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "stage": {
+          "enum": [
+            "research",
+            "delivery"
+          ],
+          "title": "Stage",
+          "type": "string"
+        }
+      },
+      "required": [
+        "check_id",
+        "code",
+        "stage",
+        "params",
+        "reason"
+      ],
+      "title": "AcceptanceCheck",
+      "type": "object"
+    },
+    "AnswerParams": {
+      "additionalProperties": false,
+      "properties": {
+        "require_limitation_disclosure": {
+          "title": "Require Limitation Disclosure",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "require_limitation_disclosure"
+      ],
+      "title": "AnswerParams",
+      "type": "object"
+    },
+    "AttributionParams": {
+      "additionalProperties": false,
+      "properties": {
+        "required_class": {
+          "enum": [
+            "primary_official",
+            "primary_study",
+            "secondary"
+          ],
+          "title": "Required Class",
+          "type": "string"
+        }
+      },
+      "required": [
+        "required_class"
+      ],
+      "title": "AttributionParams",
+      "type": "object"
+    },
+    "ChallengeParams": {
+      "additionalProperties": false,
+      "properties": {
+        "families": {
+          "items": {
+            "enum": [
+              "primary",
+              "independent",
+              "counterevidence"
+            ],
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Families",
+          "type": "array"
+        },
+        "min_successful_queries": {
+          "exclusiveMinimum": 0,
+          "title": "Min Successful Queries",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "families",
+        "min_successful_queries"
+      ],
+      "title": "ChallengeParams",
+      "type": "object"
+    },
+    "CheckCode": {
+      "enum": [
+        "has_current_support",
+        "min_observation_groups",
+        "source_attribution",
+        "freshness",
+        "numeric_recomputed",
+        "challenge_attempted",
+        "conflict_disposition",
+        "answer_in_report"
+      ],
+      "title": "CheckCode",
+      "type": "string"
+    },
+    "ConflictParams": {
+      "additionalProperties": false,
+      "properties": {
+        "allowed": {
+          "items": {
+            "enum": [
+              "resolved_by_scope",
+              "resolved_by_correction",
+              "resolved_by_reproduction",
+              "weighted_conclusion",
+              "unresolved_disclosed",
+              "requires_user_judgment"
+            ],
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Allowed",
+          "type": "array"
+        }
+      },
+      "required": [
+        "allowed"
+      ],
+      "title": "ConflictParams",
+      "type": "object"
+    },
+    "FreshnessParams": {
+      "additionalProperties": false,
+      "properties": {
+        "basis": {
+          "enum": [
+            "published_at",
+            "event_at"
+          ],
+          "title": "Basis",
+          "type": "string"
+        },
+        "max_age_days": {
+          "minimum": 0,
+          "title": "Max Age Days",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "max_age_days",
+        "basis"
+      ],
+      "title": "FreshnessParams",
+      "type": "object"
+    },
+    "ObservationParams": {
+      "additionalProperties": false,
+      "properties": {
+        "minimum": {
+          "enum": [
+            1,
+            2
+          ],
+          "title": "Minimum",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "minimum"
+      ],
+      "title": "ObservationParams",
+      "type": "object"
+    },
+    "OutputContract": {
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "const": "markdown",
+          "title": "Format",
+          "type": "string"
+        },
+        "language": {
+          "minLength": 1,
+          "title": "Language",
+          "type": "string"
+        },
+        "max_characters": {
+          "exclusiveMinimum": 0,
+          "title": "Max Characters",
+          "type": "integer"
+        },
+        "required_sections": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Required Sections",
+          "type": "array"
+        }
+      },
+      "required": [
+        "language",
+        "format",
+        "required_sections",
+        "max_characters"
+      ],
+      "title": "OutputContract",
+      "type": "object"
+    },
+    "RecomputeParams": {
+      "additionalProperties": false,
+      "properties": {
+        "absolute_tolerance": {
+          "title": "Absolute Tolerance",
+          "type": "string"
+        }
+      },
+      "required": [
+        "absolute_tolerance"
+      ],
+      "title": "RecomputeParams",
+      "type": "object"
+    },
+    "Requirement": {
+      "additionalProperties": false,
+      "properties": {
+        "acceptance_checks": {
+          "items": {
+            "$ref": "#/$defs/AcceptanceCheck"
+          },
+          "minItems": 2,
+          "title": "Acceptance Checks",
+          "type": "array"
+        },
+        "allow_unknown": {
+          "title": "Allow Unknown",
+          "type": "boolean"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "priority": {
+          "enum": [
+            "must",
+            "should",
+            "optional"
+          ],
+          "title": "Priority",
+          "type": "string"
+        },
+        "question": {
+          "minLength": 1,
+          "title": "Question",
+          "type": "string"
+        },
+        "unknown_check_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Unknown Check Ids",
+          "type": "array"
+        },
+        "weight": {
+          "exclusiveMinimum": 0,
+          "title": "Weight",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "question",
+        "priority",
+        "weight",
+        "allow_unknown",
+        "unknown_check_ids",
+        "acceptance_checks"
+      ],
+      "title": "Requirement",
+      "type": "object"
+    },
+    "Scope": {
+      "additionalProperties": false,
+      "properties": {
+        "exclude": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Exclude",
+          "type": "array"
+        },
+        "include": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Include",
+          "type": "array"
+        },
+        "regions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Regions",
+          "type": "array"
+        },
+        "subjects": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Subjects",
+          "type": "array"
+        },
+        "versions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Versions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "subjects"
+      ],
+      "title": "Scope",
+      "type": "object"
+    },
+    "StopPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "should_weighted_fraction": {
+          "default": 0.9,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Should Weighted Fraction",
+          "type": "number"
+        }
+      },
+      "title": "StopPolicy",
+      "type": "object"
+    },
+    "SupportParams": {
+      "additionalProperties": false,
+      "properties": {
+        "claim_kinds": {
+          "items": {
+            "enum": [
+              "attributed",
+              "factual",
+              "comparative",
+              "derived",
+              "inference"
+            ],
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Claim Kinds",
+          "type": "array"
+        },
+        "min_claims": {
+          "exclusiveMinimum": 0,
+          "title": "Min Claims",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "claim_kinds",
+        "min_claims"
+      ],
+      "title": "SupportParams",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "as_of": {
+      "title": "As Of",
+      "type": "string"
+    },
+    "contract_id": {
+      "minLength": 1,
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "output_contract": {
+      "$ref": "#/$defs/OutputContract"
+    },
+    "question": {
+      "minLength": 1,
+      "title": "Question",
+      "type": "string"
+    },
+    "requirements": {
+      "items": {
+        "$ref": "#/$defs/Requirement"
+      },
+      "minItems": 1,
+      "title": "Requirements",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "scope": {
+      "$ref": "#/$defs/Scope"
+    },
+    "stop_policy": {
+      "$ref": "#/$defs/StopPolicy"
+    },
+    "version": {
+      "exclusiveMinimum": 0,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "schema_version",
+    "contract_id",
+    "version",
+    "question",
+    "scope",
+    "as_of",
+    "requirements",
+    "output_contract"
+  ],
+  "title": "ResearchContract",
+  "type": "object"
+}

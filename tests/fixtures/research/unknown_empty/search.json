@@ -1,0 +1,3 @@
+{
+  "q1": {"query_id": "q1", "hits": [], "status": "empty", "usage": {"input_tokens": null, "output_tokens": null, "cost": null, "basis": "unknown"}, "error": null}
+}

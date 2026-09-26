@@ -1,0 +1,1 @@
+{"finish_reason":"stop","model_profile_hash":"fictional-outline-fixture-v1","provider_request_id":null,"raw_text":"{\"reason\":\"虚构原文逐字支持该官方归因陈述；不解释为独立验证\",\"source_class_verified\":true,\"verdict\":\"supported\"}","usage":{"basis":"provider","cost":null,"input_tokens":1,"output_tokens":1}}

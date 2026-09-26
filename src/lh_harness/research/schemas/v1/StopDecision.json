@@ -1,0 +1,189 @@
+{
+  "$defs": {
+    "BudgetSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "cost_usd": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cost Usd"
+        },
+        "external_calls": {
+          "minimum": 0,
+          "title": "External Calls",
+          "type": "integer"
+        },
+        "total_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Total Tokens"
+        },
+        "usage_unknown_attempts": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Usage Unknown Attempts",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "external_calls"
+      ],
+      "title": "BudgetSnapshot",
+      "type": "object"
+    },
+    "GateResult": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Refs",
+          "type": "array"
+        },
+        "status": {
+          "enum": [
+            "pass",
+            "fail",
+            "not_applicable"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "status",
+        "reason"
+      ],
+      "title": "GateResult",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "budget_snapshot": {
+      "$ref": "#/$defs/BudgetSnapshot"
+    },
+    "coverage_version_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Coverage Version Ids",
+      "type": "array"
+    },
+    "evaluated_state_version": {
+      "minimum": 0,
+      "title": "Evaluated State Version",
+      "type": "integer"
+    },
+    "gate_results": {
+      "items": {
+        "$ref": "#/$defs/GateResult"
+      },
+      "title": "Gate Results",
+      "type": "array"
+    },
+    "input_manifest_hash": {
+      "title": "Input Manifest Hash",
+      "type": "string"
+    },
+    "outcome": {
+      "enum": [
+        "complete",
+        "complete_with_limitations",
+        "incomplete_budget",
+        "incomplete_plateau",
+        "incomplete_no_progress",
+        "incomplete_report_audit_loop",
+        "blocked",
+        "failed",
+        "cancelled"
+      ],
+      "title": "Outcome",
+      "type": "string"
+    },
+    "outline_version": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Outline Version"
+    },
+    "planner_steps": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Planner Steps",
+      "type": "integer"
+    },
+    "report_hash": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Report Hash"
+    },
+    "research_rounds": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Research Rounds",
+      "type": "integer"
+    },
+    "terminal_state_version": {
+      "exclusiveMinimum": 0,
+      "title": "Terminal State Version",
+      "type": "integer"
+    },
+    "unresolved_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Unresolved Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "outcome",
+    "evaluated_state_version",
+    "terminal_state_version",
+    "input_manifest_hash",
+    "gate_results",
+    "unresolved_ids",
+    "budget_snapshot"
+  ],
+  "title": "StopDecision",
+  "type": "object"
+}

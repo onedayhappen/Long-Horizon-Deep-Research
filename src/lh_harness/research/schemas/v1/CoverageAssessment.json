@@ -1,0 +1,74 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "audit_id": {
+      "title": "Audit Id",
+      "type": "string"
+    },
+    "claim_version_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Claim Version Ids",
+      "type": "array"
+    },
+    "contract_version": {
+      "exclusiveMinimum": 0,
+      "title": "Contract Version",
+      "type": "integer"
+    },
+    "disposition": {
+      "enum": [
+        "satisfied",
+        "bounded_unknown",
+        "open",
+        "blocked"
+      ],
+      "title": "Disposition",
+      "type": "string"
+    },
+    "input_manifest_hash": {
+      "title": "Input Manifest Hash",
+      "type": "string"
+    },
+    "missing_check_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Missing Check Ids",
+      "type": "array"
+    },
+    "passed_check_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Passed Check Ids",
+      "type": "array"
+    },
+    "requirement_id": {
+      "title": "Requirement Id",
+      "type": "string"
+    },
+    "stage": {
+      "enum": [
+        "research",
+        "delivery"
+      ],
+      "title": "Stage",
+      "type": "string"
+    }
+  },
+  "required": [
+    "requirement_id",
+    "stage",
+    "contract_version",
+    "input_manifest_hash",
+    "disposition",
+    "passed_check_ids",
+    "missing_check_ids",
+    "claim_version_ids",
+    "audit_id"
+  ],
+  "title": "CoverageAssessment",
+  "type": "object"
+}

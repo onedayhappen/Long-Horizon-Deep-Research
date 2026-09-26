@@ -1,0 +1,46 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "cost_usd": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Cost Usd"
+    },
+    "external_calls": {
+      "minimum": 0,
+      "title": "External Calls",
+      "type": "integer"
+    },
+    "total_tokens": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Total Tokens"
+    },
+    "usage_unknown_attempts": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Usage Unknown Attempts",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "external_calls"
+  ],
+  "title": "BudgetSnapshot",
+  "type": "object"
+}

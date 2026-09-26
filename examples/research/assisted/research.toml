@@ -1,0 +1,13 @@
+[research.execution]
+mode = "assisted"
+[research.model]
+backend = "external"
+[research.search]
+provider = "external"
+[research.fetch]
+mode = "external"
+[research.budget]
+enforcement = "calls_time"
+max_external_calls = 120
+max_duration_seconds = 7200
+pool_percentages = [80, 10, 10]

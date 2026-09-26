@@ -1,0 +1,1 @@
+{"finish_reason":"stop","model_profile_hash":"fictional-outline-fixture-v1","provider_request_id":null,"raw_text":"{\"reason\":\"该陈述保留了来源归因；限制信息单独提取和写入条件章节\",\"verdict\":\"no_objection\"}","usage":{"basis":"provider","cost":null,"input_tokens":1,"output_tokens":1}}

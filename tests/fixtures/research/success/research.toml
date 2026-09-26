@@ -1,0 +1,50 @@
+[research.execution]
+mode = "replay"
+fixture_dir = "."
+
+[research.runtime]
+max_inflight_actions = 1
+max_rounds = 20
+
+[research.budget]
+enforcement = "calls_time"
+max_external_calls = 120
+max_duration_seconds = 3600
+pool_percentages = [80, 10, 10]
+
+[research.model]
+backend = "replay"
+api_key_env = "RESEARCH_MODEL_API_KEY"
+max_output_tokens = 4096
+temperature = 0.0
+max_response_bytes = 262144
+
+[research.search]
+provider = "replay"
+api_key_env = "SERPER_API_KEY"
+max_results_per_query = 10
+max_query_variants = 5
+
+[research.fetch]
+mode = "replay"
+request_timeout_seconds = 30
+max_response_bytes = 8000000
+max_redirects = 5
+
+[research.extraction]
+max_parse_seconds = 15
+max_pdf_pages = 200
+max_text_chars = 300000
+window_chars = 6000
+window_overlap_chars = 500
+max_windows_per_action = 6
+
+[research.audit]
+max_schema_retries = 1
+max_transport_retries = 2
+
+[research.stopping]
+saturation_effective_rounds = 3
+max_no_progress_actions = 3
+max_revision_cycles = 2
+human_review_deadline_seconds = 86400

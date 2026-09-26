@@ -1,0 +1,103 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "contract_version": {
+      "exclusiveMinimum": 0,
+      "title": "Contract Version",
+      "type": "integer"
+    },
+    "data_packet": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        ]
+      },
+      "title": "Data Packet",
+      "type": "object"
+    },
+    "input_manifest_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Input Manifest Hash",
+      "type": "string"
+    },
+    "logical_action_key": {
+      "title": "Logical Action Key",
+      "type": "string"
+    },
+    "max_output_tokens": {
+      "exclusiveMinimum": 0,
+      "title": "Max Output Tokens",
+      "type": "integer"
+    },
+    "policy_version": {
+      "exclusiveMinimum": 0,
+      "title": "Policy Version",
+      "type": "integer"
+    },
+    "response_schema_id": {
+      "title": "Response Schema Id",
+      "type": "string"
+    },
+    "response_schema_version": {
+      "exclusiveMinimum": 0,
+      "title": "Response Schema Version",
+      "type": "integer"
+    },
+    "role": {
+      "enum": [
+        "planner.initialize",
+        "auditor.question_space",
+        "planner.next",
+        "researcher.extract",
+        "auditor.evidence",
+        "auditor.counter_entailment",
+        "auditor.provenance",
+        "auditor.conflict",
+        "auditor.coverage",
+        "auditor.search_bias",
+        "writer.section",
+        "auditor.report"
+      ],
+      "title": "Role",
+      "type": "string"
+    },
+    "system_template_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "System Template Hash",
+      "type": "string"
+    },
+    "system_template_id": {
+      "title": "System Template Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "role",
+    "logical_action_key",
+    "input_manifest_hash",
+    "contract_version",
+    "policy_version",
+    "system_template_id",
+    "system_template_hash",
+    "data_packet",
+    "response_schema_id",
+    "response_schema_version",
+    "max_output_tokens"
+  ],
+  "title": "RoleRequest",
+  "type": "object"
+}

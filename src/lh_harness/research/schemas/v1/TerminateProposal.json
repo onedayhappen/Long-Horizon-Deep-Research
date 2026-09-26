@@ -1,0 +1,28 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "coverage_refs": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Coverage Refs",
+      "type": "array"
+    },
+    "kind": {
+      "const": "terminate",
+      "default": "terminate",
+      "title": "Kind",
+      "type": "string"
+    },
+    "proposed_outcome": {
+      "title": "Proposed Outcome",
+      "type": "string"
+    }
+  },
+  "required": [
+    "coverage_refs",
+    "proposed_outcome"
+  ],
+  "title": "TerminateProposal",
+  "type": "object"
+}

@@ -1,0 +1,1 @@
+{"finish_reason":"stop","model_profile_hash":"fictional-outline-fixture-v1","provider_request_id":null,"raw_text":"{\"coverage_refs\":[\"e3fe1923-73b2-5336-b443-d93fcb435d33\"],\"kind\":\"terminate\",\"proposed_outcome\":\"complete\"}","usage":{"basis":"provider","cost":null,"input_tokens":1,"output_tokens":1}}

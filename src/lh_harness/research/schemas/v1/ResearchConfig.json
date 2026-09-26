@@ -1,0 +1,462 @@
+{
+  "$defs": {
+    "Audit": {
+      "additionalProperties": false,
+      "properties": {
+        "max_schema_retries": {
+          "const": 1,
+          "default": 1,
+          "title": "Max Schema Retries",
+          "type": "integer"
+        },
+        "max_transport_retries": {
+          "default": 2,
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Max Transport Retries",
+          "type": "integer"
+        }
+      },
+      "title": "Audit",
+      "type": "object"
+    },
+    "Budget": {
+      "additionalProperties": false,
+      "properties": {
+        "enforcement": {
+          "default": "calls_time",
+          "enum": [
+            "calls_time",
+            "bounded_usage"
+          ],
+          "title": "Enforcement",
+          "type": "string"
+        },
+        "max_cost_usd": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Cost Usd"
+        },
+        "max_duration_seconds": {
+          "default": 3600,
+          "exclusiveMinimum": 0,
+          "title": "Max Duration Seconds",
+          "type": "integer"
+        },
+        "max_external_calls": {
+          "default": 120,
+          "exclusiveMinimum": 0,
+          "title": "Max External Calls",
+          "type": "integer"
+        },
+        "max_total_tokens": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Total Tokens"
+        },
+        "pool_percentages": {
+          "items": {
+            "type": "integer"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "title": "Pool Percentages",
+          "type": "array"
+        }
+      },
+      "title": "Budget",
+      "type": "object"
+    },
+    "Execution": {
+      "additionalProperties": false,
+      "properties": {
+        "fixture_dir": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fixture Dir"
+        },
+        "mode": {
+          "enum": [
+            "replay",
+            "live",
+            "assisted"
+          ],
+          "title": "Mode",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "title": "Execution",
+      "type": "object"
+    },
+    "Extraction": {
+      "additionalProperties": false,
+      "properties": {
+        "max_parse_seconds": {
+          "default": 15,
+          "exclusiveMinimum": 0,
+          "title": "Max Parse Seconds",
+          "type": "integer"
+        },
+        "max_pdf_pages": {
+          "default": 200,
+          "exclusiveMinimum": 0,
+          "title": "Max Pdf Pages",
+          "type": "integer"
+        },
+        "max_text_chars": {
+          "default": 300000,
+          "exclusiveMinimum": 0,
+          "title": "Max Text Chars",
+          "type": "integer"
+        },
+        "max_windows_per_action": {
+          "default": 6,
+          "exclusiveMinimum": 0,
+          "title": "Max Windows Per Action",
+          "type": "integer"
+        },
+        "window_chars": {
+          "default": 6000,
+          "exclusiveMinimum": 0,
+          "title": "Window Chars",
+          "type": "integer"
+        },
+        "window_overlap_chars": {
+          "default": 500,
+          "minimum": 0,
+          "title": "Window Overlap Chars",
+          "type": "integer"
+        }
+      },
+      "title": "Extraction",
+      "type": "object"
+    },
+    "Fetch": {
+      "additionalProperties": false,
+      "properties": {
+        "egress_proxy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Egress Proxy"
+        },
+        "egress_validation_path": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Egress Validation Path"
+        },
+        "max_redirects": {
+          "default": 5,
+          "minimum": 0,
+          "title": "Max Redirects",
+          "type": "integer"
+        },
+        "max_response_bytes": {
+          "default": 8000000,
+          "exclusiveMinimum": 0,
+          "title": "Max Response Bytes",
+          "type": "integer"
+        },
+        "mode": {
+          "enum": [
+            "replay",
+            "egress_proxy",
+            "external"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "request_timeout_seconds": {
+          "default": 30,
+          "exclusiveMinimum": 0,
+          "title": "Request Timeout Seconds",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "title": "Fetch",
+      "type": "object"
+    },
+    "Model": {
+      "additionalProperties": false,
+      "properties": {
+        "api_key_env": {
+          "default": "RESEARCH_MODEL_API_KEY",
+          "title": "Api Key Env",
+          "type": "string"
+        },
+        "backend": {
+          "enum": [
+            "replay",
+            "chat_json",
+            "external"
+          ],
+          "title": "Backend",
+          "type": "string"
+        },
+        "base_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Base Url"
+        },
+        "max_output_tokens": {
+          "default": 4096,
+          "exclusiveMinimum": 0,
+          "title": "Max Output Tokens",
+          "type": "integer"
+        },
+        "max_response_bytes": {
+          "default": 262144,
+          "exclusiveMinimum": 0,
+          "title": "Max Response Bytes",
+          "type": "integer"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "profile_path": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Profile Path"
+        },
+        "request_timeout_seconds": {
+          "default": 120,
+          "exclusiveMinimum": 0,
+          "title": "Request Timeout Seconds",
+          "type": "integer"
+        },
+        "temperature": {
+          "default": 0.0,
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Temperature",
+          "type": "number"
+        },
+        "thinking": {
+          "anyOf": [
+            {
+              "enum": [
+                "enabled",
+                "disabled"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Thinking"
+        }
+      },
+      "required": [
+        "backend"
+      ],
+      "title": "Model",
+      "type": "object"
+    },
+    "Research": {
+      "additionalProperties": false,
+      "properties": {
+        "audit": {
+          "$ref": "#/$defs/Audit"
+        },
+        "budget": {
+          "$ref": "#/$defs/Budget"
+        },
+        "execution": {
+          "$ref": "#/$defs/Execution"
+        },
+        "extraction": {
+          "$ref": "#/$defs/Extraction"
+        },
+        "fetch": {
+          "$ref": "#/$defs/Fetch"
+        },
+        "model": {
+          "$ref": "#/$defs/Model"
+        },
+        "runtime": {
+          "$ref": "#/$defs/Runtime"
+        },
+        "search": {
+          "$ref": "#/$defs/Search"
+        },
+        "stopping": {
+          "$ref": "#/$defs/Stopping"
+        }
+      },
+      "required": [
+        "execution",
+        "model",
+        "search",
+        "fetch"
+      ],
+      "title": "Research",
+      "type": "object"
+    },
+    "Runtime": {
+      "additionalProperties": false,
+      "properties": {
+        "max_inflight_actions": {
+          "const": 1,
+          "default": 1,
+          "title": "Max Inflight Actions",
+          "type": "integer"
+        },
+        "max_rounds": {
+          "default": 20,
+          "exclusiveMinimum": 0,
+          "title": "Max Rounds",
+          "type": "integer"
+        }
+      },
+      "title": "Runtime",
+      "type": "object"
+    },
+    "Search": {
+      "additionalProperties": false,
+      "properties": {
+        "api_key_env": {
+          "default": "SERPER_API_KEY",
+          "title": "Api Key Env",
+          "type": "string"
+        },
+        "max_query_variants": {
+          "default": 5,
+          "exclusiveMinimum": 0,
+          "title": "Max Query Variants",
+          "type": "integer"
+        },
+        "max_results_per_query": {
+          "default": 10,
+          "exclusiveMinimum": 0,
+          "title": "Max Results Per Query",
+          "type": "integer"
+        },
+        "provider": {
+          "enum": [
+            "replay",
+            "serper",
+            "external"
+          ],
+          "title": "Provider",
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider"
+      ],
+      "title": "Search",
+      "type": "object"
+    },
+    "Stopping": {
+      "additionalProperties": false,
+      "properties": {
+        "human_review_deadline_seconds": {
+          "default": 86400,
+          "exclusiveMinimum": 0,
+          "title": "Human Review Deadline Seconds",
+          "type": "integer"
+        },
+        "max_no_progress_actions": {
+          "default": 3,
+          "exclusiveMinimum": 0,
+          "title": "Max No Progress Actions",
+          "type": "integer"
+        },
+        "max_revision_cycles": {
+          "default": 2,
+          "minimum": 0,
+          "title": "Max Revision Cycles",
+          "type": "integer"
+        },
+        "saturation_effective_rounds": {
+          "default": 3,
+          "exclusiveMinimum": 0,
+          "title": "Saturation Effective Rounds",
+          "type": "integer"
+        }
+      },
+      "title": "Stopping",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "research": {
+      "$ref": "#/$defs/Research"
+    }
+  },
+  "required": [
+    "research"
+  ],
+  "title": "ResearchConfig",
+  "type": "object"
+}

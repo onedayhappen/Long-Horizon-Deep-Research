@@ -1,0 +1,173 @@
+{
+  "schema_version": 1,
+  "contract_id": "cpython312-threading-assistant-research",
+  "version": 1,
+  "question": "CPython 3.12 中，多线程何时能并行执行 CPU 密集型代码？如何选择线程、多进程和底层多解释器？",
+  "scope": {
+    "subjects": [
+      "CPython 3.12"
+    ],
+    "regions": [],
+    "versions": [
+      "3.12"
+    ],
+    "include": [
+      "Python 官方文档中的行为、构建条件和并行执行接口"
+    ],
+    "exclude": [
+      "其他 Python 实现",
+      "性能实测和通用加速比",
+      "独立第三方评测",
+      "API key 接入",
+      "Python 3.13/3.14 自由线程构建与高层多解释器 API"
+    ]
+  },
+  "as_of": "2026-09-26T00:00:00Z",
+  "requirements": [
+    {
+      "id": "R1",
+      "question": "解释启用 GIL 的常规 CPython 中，纯 Python CPU 计算与 I/O 并发的区别",
+      "priority": "must",
+      "weight": 1,
+      "allow_unknown": false,
+      "unknown_check_ids": [],
+      "acceptance_checks": [
+        {
+          "check_id": "R1.support",
+          "code": "has_current_support",
+          "stage": "research",
+          "params": {
+            "claim_kinds": [
+              "attributed"
+            ],
+            "min_claims": 1
+          },
+          "reason": "使用可定位的官方文档陈述，并保留适用条件"
+        },
+        {
+          "check_id": "R1.attribution",
+          "code": "source_attribution",
+          "stage": "research",
+          "params": {
+            "required_class": "primary_official"
+          },
+          "reason": "这是官方行为与接口研究，不视为独立性能复测"
+        },
+        {
+          "check_id": "R1.answer",
+          "code": "answer_in_report",
+          "stage": "delivery",
+          "params": {
+            "require_limitation_disclosure": true
+          },
+          "reason": "回答该需求并披露版本、构建和未实测限制"
+        }
+      ]
+    },
+    {
+      "id": "R2",
+      "question": "解释释放 GIL 的原生计算及每解释器 GIL 的条件和版本边界",
+      "priority": "must",
+      "weight": 1,
+      "allow_unknown": false,
+      "unknown_check_ids": [],
+      "acceptance_checks": [
+        {
+          "check_id": "R2.support",
+          "code": "has_current_support",
+          "stage": "research",
+          "params": {
+            "claim_kinds": [
+              "attributed"
+            ],
+            "min_claims": 2
+          },
+          "reason": "使用可定位的官方文档陈述，并保留适用条件"
+        },
+        {
+          "check_id": "R2.attribution",
+          "code": "source_attribution",
+          "stage": "research",
+          "params": {
+            "required_class": "primary_official"
+          },
+          "reason": "这是官方行为与接口研究，不视为独立性能复测"
+        },
+        {
+          "check_id": "R2.challenge",
+          "code": "challenge_attempted",
+          "stage": "research",
+          "params": {
+            "families": [
+              "counterevidence"
+            ],
+            "min_successful_queries": 1
+          },
+          "reason": "专门检查普通线程不能并行执行 Python 字节码这一判断的原生计算与底层多解释器例外"
+        },
+        {
+          "check_id": "R2.answer",
+          "code": "answer_in_report",
+          "stage": "delivery",
+          "params": {
+            "require_limitation_disclosure": true
+          },
+          "reason": "回答该需求并披露版本、构建和未实测限制"
+        }
+      ]
+    },
+    {
+      "id": "R3",
+      "question": "比较线程和多进程的适用条件，说明 3.12 底层多解释器的使用边界，不提供未经实测的加速比",
+      "priority": "must",
+      "weight": 1,
+      "allow_unknown": false,
+      "unknown_check_ids": [],
+      "acceptance_checks": [
+        {
+          "check_id": "R3.support",
+          "code": "has_current_support",
+          "stage": "research",
+          "params": {
+            "claim_kinds": [
+              "attributed"
+            ],
+            "min_claims": 2
+          },
+          "reason": "使用可定位的官方文档陈述，并保留适用条件"
+        },
+        {
+          "check_id": "R3.attribution",
+          "code": "source_attribution",
+          "stage": "research",
+          "params": {
+            "required_class": "primary_official"
+          },
+          "reason": "这是官方行为与接口研究，不视为独立性能复测"
+        },
+        {
+          "check_id": "R3.answer",
+          "code": "answer_in_report",
+          "stage": "delivery",
+          "params": {
+            "require_limitation_disclosure": true
+          },
+          "reason": "回答该需求并披露版本、构建和未实测限制"
+        }
+      ]
+    }
+  ],
+  "output_contract": {
+    "language": "zh-CN",
+    "format": "markdown",
+    "required_sections": [
+      "常规线程：CPU 与 I/O",
+      "原生计算与每解释器 GIL：条件和边界",
+      "方案选择与研究限制"
+    ],
+    "max_characters": 14000
+  },
+  "stop_policy": {
+    "should_weighted_fraction": 0.9
+  }
+}

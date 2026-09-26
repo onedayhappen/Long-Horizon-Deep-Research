@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+
+# Local environments
+.venv/
+venv/
+env/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+node_modules/
+
+# Vite builds the Web bundle into the package. It is never committed; the
+# release workflow builds it before packaging.
+src/lh_harness/_frontend/
+
+# package-lock.json is the authority used by CI; bun may be used locally but
+# its lockfile is not committed so the two cannot drift.
+bun.lock
+bun.lockb
+
+# Local run outputs
+.lh-harness/
+/research-runs/
+/state/
+/-p/
+runs/
+logs/
+results/
+tmp/
+
+# Local research notes and historical reports
+/docs/
+
+# Secrets and local overrides
+.env
+*.env
+env.local.sh
+*.local.sh
+*.mcp.json
+
+# Editor/system
+.DS_Store
+.idea/
+.vscode/
+.lh-harness-quickstart/

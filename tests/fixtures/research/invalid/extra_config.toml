@@ -1,0 +1,10 @@
+[research.execution]
+mode = "replay"
+fixture_dir = "."
+fallback_provider = "somewhere"
+[research.model]
+backend = "replay"
+[research.search]
+provider = "replay"
+[research.fetch]
+mode = "replay"

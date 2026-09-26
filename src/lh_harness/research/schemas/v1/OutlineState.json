@@ -1,0 +1,124 @@
+{
+  "$defs": {
+    "OutlineNode": {
+      "additionalProperties": false,
+      "properties": {
+        "active": {
+          "default": true,
+          "title": "Active",
+          "type": "boolean"
+        },
+        "claim_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Claim Ids",
+          "type": "array"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "notes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Notes",
+          "type": "array"
+        },
+        "parent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Id"
+        },
+        "replaced_by": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Replaced By",
+          "type": "array"
+        },
+        "requirement_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Requirement Ids",
+          "type": "array"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "requirement_ids"
+      ],
+      "title": "OutlineNode",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "nodes": {
+      "items": {
+        "$ref": "#/$defs/OutlineNode"
+      },
+      "minItems": 1,
+      "title": "Nodes",
+      "type": "array"
+    },
+    "operations": {
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Operations",
+      "type": "array"
+    },
+    "outline_version": {
+      "exclusiveMinimum": 0,
+      "title": "Outline Version",
+      "type": "integer"
+    },
+    "question_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Question Ids",
+      "type": "array"
+    },
+    "reason_refs": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Reason Refs",
+      "type": "array"
+    }
+  },
+  "required": [
+    "outline_version",
+    "question_ids",
+    "nodes"
+  ],
+  "title": "OutlineState",
+  "type": "object"
+}

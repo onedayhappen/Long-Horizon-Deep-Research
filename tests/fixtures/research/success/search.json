@@ -1,0 +1,7 @@
+{
+  "q1": {
+    "query_id": "q1",
+    "hits": [{"hit_id": "q1.1", "url": "https://example.org/official-export", "title": "虚构产品 A 功能说明", "snippet": "官方声明支持导出 CSV", "rank": 1, "publisher": "虚构产品 A", "published_at": "2026-08-01T00:00:00Z"}],
+    "status": "hit", "usage": {"input_tokens": null, "output_tokens": null, "cost": null, "basis": "unknown"}, "error": null
+  }
+}

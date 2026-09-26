@@ -1,0 +1,98 @@
+{
+  "$defs": {
+    "ReportFinding": {
+      "additionalProperties": false,
+      "properties": {
+        "check_code": {
+          "title": "Check Code",
+          "type": "string"
+        },
+        "fact_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Fact Id"
+        },
+        "refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Refs",
+          "type": "array"
+        },
+        "repair_kind": {
+          "title": "Repair Kind",
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "blocking",
+            "material",
+            "minor"
+          ],
+          "title": "Severity",
+          "type": "string"
+        }
+      },
+      "required": [
+        "fact_id",
+        "check_code",
+        "severity",
+        "repair_kind",
+        "refs"
+      ],
+      "title": "ReportFinding",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "answered_requirement_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Answered Requirement Ids",
+      "type": "array"
+    },
+    "checked_fact_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Checked Fact Ids",
+      "type": "array"
+    },
+    "checked_section_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Checked Section Ids",
+      "type": "array"
+    },
+    "findings": {
+      "items": {
+        "$ref": "#/$defs/ReportFinding"
+      },
+      "title": "Findings",
+      "type": "array"
+    },
+    "report_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Report Hash",
+      "type": "string"
+    }
+  },
+  "required": [
+    "report_hash",
+    "findings",
+    "checked_fact_ids",
+    "checked_section_ids",
+    "answered_requirement_ids"
+  ],
+  "title": "ReportAudit",
+  "type": "object"
+}

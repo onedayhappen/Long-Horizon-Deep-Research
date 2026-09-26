@@ -1,0 +1,71 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "country_code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Country Code"
+    },
+    "language": {
+      "title": "Language",
+      "type": "string"
+    },
+    "max_results": {
+      "exclusiveMinimum": 0,
+      "title": "Max Results",
+      "type": "integer"
+    },
+    "query_id": {
+      "title": "Query Id",
+      "type": "string"
+    },
+    "question_id": {
+      "title": "Question Id",
+      "type": "string"
+    },
+    "source_class_targets": {
+      "items": {
+        "enum": [
+          "primary_official",
+          "primary_study",
+          "secondary"
+        ],
+        "type": "string"
+      },
+      "title": "Source Class Targets",
+      "type": "array"
+    },
+    "strategy_family": {
+      "enum": [
+        "primary",
+        "independent",
+        "counterevidence"
+      ],
+      "title": "Strategy Family",
+      "type": "string"
+    },
+    "text": {
+      "minLength": 1,
+      "title": "Text",
+      "type": "string"
+    }
+  },
+  "required": [
+    "query_id",
+    "question_id",
+    "text",
+    "strategy_family",
+    "language",
+    "country_code",
+    "source_class_targets",
+    "max_results"
+  ],
+  "title": "QuerySpec",
+  "type": "object"
+}

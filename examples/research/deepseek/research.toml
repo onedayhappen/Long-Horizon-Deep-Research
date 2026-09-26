@@ -1,0 +1,26 @@
+# 大模型自动调用 DeepSeek；搜索和网页抓取仍通过 bridge 辅助通道处理。
+[research.execution]
+mode = "assisted"
+
+[research.model]
+backend = "chat_json"
+base_url = "https://api.deepseek.com"
+model = "deepseek-v4-pro"
+api_key_env = "DEEPSEEK_API_KEY"
+thinking = "disabled"
+temperature = 0.0
+max_output_tokens = 8192
+max_response_bytes = 1048576
+request_timeout_seconds = 120
+
+[research.search]
+provider = "external"
+
+[research.fetch]
+mode = "external"
+
+[research.budget]
+enforcement = "calls_time"
+max_external_calls = 120
+max_duration_seconds = 7200
+pool_percentages = [80, 10, 10]

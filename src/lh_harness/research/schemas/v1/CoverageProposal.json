@@ -1,0 +1,64 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "claim_version_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Claim Version Ids",
+      "type": "array"
+    },
+    "disposition": {
+      "enum": [
+        "satisfied",
+        "bounded_unknown",
+        "open",
+        "blocked"
+      ],
+      "title": "Disposition",
+      "type": "string"
+    },
+    "investigation_refs": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Investigation Refs",
+      "type": "array"
+    },
+    "missing_check_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Missing Check Ids",
+      "type": "array"
+    },
+    "passed_check_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Passed Check Ids",
+      "type": "array"
+    },
+    "requirement_id": {
+      "title": "Requirement Id",
+      "type": "string"
+    },
+    "resolved_gap_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Resolved Gap Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "requirement_id",
+    "disposition",
+    "passed_check_ids",
+    "missing_check_ids",
+    "claim_version_ids",
+    "investigation_refs"
+  ],
+  "title": "CoverageProposal",
+  "type": "object"
+}

@@ -1,0 +1,111 @@
+{
+  "$defs": {
+    "OutlineNode": {
+      "additionalProperties": false,
+      "properties": {
+        "active": {
+          "default": true,
+          "title": "Active",
+          "type": "boolean"
+        },
+        "claim_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Claim Ids",
+          "type": "array"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "notes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Notes",
+          "type": "array"
+        },
+        "parent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Id"
+        },
+        "replaced_by": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Replaced By",
+          "type": "array"
+        },
+        "requirement_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Requirement Ids",
+          "type": "array"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "requirement_ids"
+      ],
+      "title": "OutlineNode",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "outline_nodes": {
+      "items": {
+        "$ref": "#/$defs/OutlineNode"
+      },
+      "title": "Outline Nodes",
+      "type": "array"
+    },
+    "outline_sections": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Outline Sections",
+      "type": "array"
+    },
+    "question_ids": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Question Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "question_ids",
+    "outline_sections"
+  ],
+  "title": "InitializationProposal",
+  "type": "object"
+}

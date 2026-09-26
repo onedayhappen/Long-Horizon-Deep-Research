@@ -1,0 +1,36 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "dimensions_checked": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Dimensions Checked",
+      "type": "array"
+    },
+    "missing_questions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Missing Questions",
+      "type": "array"
+    },
+    "review_status": {
+      "enum": [
+        "pass",
+        "missing",
+        "needs_clarification"
+      ],
+      "title": "Review Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "review_status",
+    "dimensions_checked",
+    "missing_questions"
+  ],
+  "title": "QuestionSpaceAudit",
+  "type": "object"
+}

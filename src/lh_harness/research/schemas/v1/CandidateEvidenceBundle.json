@@ -1,0 +1,82 @@
+{
+  "$defs": {
+    "CandidateEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "claim_id": {
+          "title": "Claim Id",
+          "type": "string"
+        },
+        "claim_kind": {
+          "enum": [
+            "attributed",
+            "factual",
+            "comparative",
+            "derived",
+            "inference"
+          ],
+          "title": "Claim Kind",
+          "type": "string"
+        },
+        "claim_text": {
+          "minLength": 1,
+          "title": "Claim Text",
+          "type": "string"
+        },
+        "excerpt": {
+          "minLength": 1,
+          "title": "Excerpt",
+          "type": "string"
+        },
+        "observation_root": {
+          "title": "Observation Root",
+          "type": "string"
+        },
+        "requirement_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Requirement Ids",
+          "type": "array"
+        },
+        "source_class": {
+          "enum": [
+            "primary_official",
+            "primary_study",
+            "secondary",
+            "unknown"
+          ],
+          "title": "Source Class",
+          "type": "string"
+        }
+      },
+      "required": [
+        "claim_id",
+        "claim_text",
+        "claim_kind",
+        "requirement_ids",
+        "excerpt",
+        "source_class",
+        "observation_root"
+      ],
+      "title": "CandidateEvidence",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "candidates": {
+      "items": {
+        "$ref": "#/$defs/CandidateEvidence"
+      },
+      "title": "Candidates",
+      "type": "array"
+    }
+  },
+  "required": [
+    "candidates"
+  ],
+  "title": "CandidateEvidenceBundle",
+  "type": "object"
+}

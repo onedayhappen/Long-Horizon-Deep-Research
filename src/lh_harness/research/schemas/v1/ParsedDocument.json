@@ -1,0 +1,86 @@
+{
+  "$defs": {
+    "ParsedBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "end": {
+          "minimum": 0,
+          "title": "End",
+          "type": "integer"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page"
+        },
+        "start": {
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "start",
+        "end"
+      ],
+      "title": "ParsedBlock",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "blocks": {
+      "items": {
+        "$ref": "#/$defs/ParsedBlock"
+      },
+      "title": "Blocks",
+      "type": "array"
+    },
+    "language": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Language"
+    },
+    "parser_id": {
+      "title": "Parser Id",
+      "type": "string"
+    },
+    "parser_version": {
+      "title": "Parser Version",
+      "type": "string"
+    },
+    "text_blob_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Text Blob Hash",
+      "type": "string"
+    }
+  },
+  "required": [
+    "parser_id",
+    "parser_version",
+    "text_blob_hash",
+    "language",
+    "blocks"
+  ],
+  "title": "ParsedDocument",
+  "type": "object"
+}

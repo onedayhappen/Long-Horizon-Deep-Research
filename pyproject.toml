@@ -1,0 +1,59 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "deep-research-harness"
+version = "0.1.7"
+description = "Standalone evidence-based research with iterative outlines and audited reports"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["agent", "deep-research", "evidence", "llm"]
+dependencies = [
+    "packaging",
+    "tomli; python_version < '3.11'",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
+    "websockets>=12",
+]
+
+[project.optional-dependencies]
+# starlette>=1.6 imports httpx2 in its TestClient and only falls back to the
+# deprecated httpx; pinning httpx2 keeps the suite warning-free.
+test = [
+    "pytest",
+    "pytest-asyncio",
+    "httpx2",
+]
+research = ["pydantic>=2.10,<3", "httpx>=0.27,<1", "beautifulsoup4>=4.12,<5", "pypdf>=5,<7"]
+research-zh = ["jieba>=0.42,<1"]
+
+[project.scripts]
+lh-harness = "lh_harness.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lh_harness"]
+# The Web bundle is a build artifact, not source: it is git-ignored and CI
+# builds it before packaging.  ``artifacts`` (unlike ``force-include``) skips a
+# missing path silently, so a checkout without a Node toolchain still installs.
+artifacts = [
+    "/src/lh_harness/_frontend/web/dist/**",
+]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src/lh_harness",
+    "/pyproject.toml",
+    "/README.md",
+    "/README.zh-CN.md",
+    "/LICENSE",
+]
+# Ship the built assets so `pip install <sdist>` yields a wheel with the Web UI.
+artifacts = [
+    "/src/lh_harness/_frontend/web/dist/**",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

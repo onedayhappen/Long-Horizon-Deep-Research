@@ -1,0 +1,42 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "blind_spots": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Blind Spots",
+      "type": "array"
+    },
+    "query_families_seen": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Query Families Seen",
+      "type": "array"
+    },
+    "review_status": {
+      "enum": [
+        "pass",
+        "missing"
+      ],
+      "title": "Review Status",
+      "type": "string"
+    },
+    "source_classes_seen": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Source Classes Seen",
+      "type": "array"
+    }
+  },
+  "required": [
+    "review_status",
+    "source_classes_seen",
+    "query_families_seen",
+    "blind_spots"
+  ],
+  "title": "SearchBiasVerdict",
+  "type": "object"
+}
