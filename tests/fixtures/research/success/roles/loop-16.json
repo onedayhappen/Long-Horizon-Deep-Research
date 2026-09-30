@@ -1,1 +1,0 @@
-{"finish_reason":"stop","model_profile_hash":"replay-fixture-v1","provider_request_id":null,"raw_text":"{\"reason\":\"未将官方声明写成独立验证\",\"verdict\":\"no_objection\"}","usage":{"basis":"provider","cost":null,"input_tokens":1,"output_tokens":1}}

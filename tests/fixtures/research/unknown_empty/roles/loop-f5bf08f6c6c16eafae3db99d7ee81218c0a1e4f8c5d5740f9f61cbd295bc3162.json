@@ -1,1 +1,0 @@
-{"finish_reason":"stop","model_profile_hash":"replay-fixture-v1","provider_request_id":null,"raw_text":"{\"coverage_refs\":[\"5fd9c11d-64ea-5465-9cf3-120c98627bf1\"],\"kind\":\"terminate\",\"proposed_outcome\":\"complete\"}","usage":{"basis":"provider","cost":null,"input_tokens":1,"output_tokens":1}}

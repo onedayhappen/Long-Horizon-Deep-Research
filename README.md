@@ -12,6 +12,7 @@ Deep Research is an evidence based research and report workflow. Define a questi
 - **Traceable evidence:** Source snapshots, text locations, claims, review decisions, and citation relationships are stored with the run.
 - **Iterative outline:** The research loop can investigate coverage gaps and revise the outline while retaining version history.
 - **Report review:** Section and whole report checks can request targeted revisions or send a gap back to the research stage.
+- **Explicit reuse:** `--reuse-from` imports a frozen set of source materials into a new run. Candidates require purpose-specific time checks, document status validation and local audits. Imports recover after interruption; authorized ancestor invalidations are consumed before use.
 - **Resumable runs:** SQLite stores state, budgets, and events. Reports and evidence can be exported after a run.
 
 ## Requirements and installation
@@ -50,6 +51,10 @@ python -m src research export \
 The line continuations above are for Bash; enter each command on one line in PowerShell. A run ID accepts letters, digits, underscores, and hyphens and must not reuse an existing run directory.
 
 ## Research your own question
+
+To reuse an identified source within the same runs root, add `--reuse-from research-runs/research-a` to `research run`. Optionally pass `--reuse-selection selection.json`. Run `research reuse-sync --run-dir research-runs/research-b` to consume ancestor corrections without model or network calls. See [the reuse protocol and CLI examples](docs/research/reuse.md).
+
+Research storage uses the pinned APSW wheel and its private SQLite engine. Install with `python -m pip install --only-binary=apsw -e ".[research,test]"`. Runs created before creation identity was recorded cannot serve as reuse sources (`reuse_source_unverified`).
 
 1. Adapt [the example contract](examples/research/assisted/python_threads_contract.json) to define your question, scope, requirements, and acceptance checks.
 2. Adapt [the assisted configuration](examples/research/assisted/research.toml) to set the mode and budget.

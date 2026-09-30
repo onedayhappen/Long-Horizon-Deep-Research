@@ -1,0 +1,82 @@
+{
+  "additionalProperties": false,
+  "description": "A tool observation, never a model's assertion that a source is current.",
+  "properties": {
+    "checked_at": {
+      "title": "Checked At",
+      "type": "string"
+    },
+    "checked_channels": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Checked Channels",
+      "type": "array"
+    },
+    "checks_performed": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Checks Performed",
+      "type": "array"
+    },
+    "method": {
+      "enum": [
+        "origin_fetch",
+        "publisher_status",
+        "retraction_lookup",
+        "replay"
+      ],
+      "title": "Method",
+      "type": "string"
+    },
+    "observed_raw_hash": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Observed Raw Hash"
+    },
+    "result_refs": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Result Refs",
+      "type": "array"
+    },
+    "status": {
+      "enum": [
+        "unchanged",
+        "changed",
+        "withdrawn",
+        "unknown"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "validation_key": {
+      "title": "Validation Key",
+      "type": "string"
+    }
+  },
+  "required": [
+    "validation_key",
+    "checked_at",
+    "status",
+    "method",
+    "checked_channels",
+    "checks_performed",
+    "result_refs"
+  ],
+  "title": "SourceValidationResult",
+  "type": "object"
+}

@@ -317,6 +317,90 @@
       "title": "Requirement",
       "type": "object"
     },
+    "RequirementReuseRule": {
+      "additionalProperties": false,
+      "properties": {
+        "requirement_id": {
+          "title": "Requirement Id",
+          "type": "string"
+        },
+        "rule": {
+          "$ref": "#/$defs/ReuseTimeRule"
+        }
+      },
+      "required": [
+        "requirement_id",
+        "rule"
+      ],
+      "title": "RequirementReuseRule",
+      "type": "object"
+    },
+    "ReusePolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "default_rule": {
+          "$ref": "#/$defs/ReuseTimeRule"
+        },
+        "requirement_rules": {
+          "items": {
+            "$ref": "#/$defs/RequirementReuseRule"
+          },
+          "title": "Requirement Rules",
+          "type": "array"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        }
+      },
+      "title": "ReusePolicy",
+      "type": "object"
+    },
+    "ReuseTimeRule": {
+      "additionalProperties": false,
+      "properties": {
+        "knowledge_mode": {
+          "default": "strict_as_of",
+          "enum": [
+            "strict_as_of",
+            "retrospective"
+          ],
+          "title": "Knowledge Mode",
+          "type": "string"
+        },
+        "material_class": {
+          "default": "unclassified",
+          "enum": [
+            "volatile",
+            "news",
+            "versioned",
+            "stable",
+            "unclassified"
+          ],
+          "title": "Material Class",
+          "type": "string"
+        },
+        "max_validation_age_seconds": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Max Validation Age Seconds",
+          "type": "integer"
+        },
+        "temporal_mode": {
+          "default": "historical_as_of",
+          "enum": [
+            "historical_as_of",
+            "current_at_as_of"
+          ],
+          "title": "Temporal Mode",
+          "type": "string"
+        }
+      },
+      "title": "ReuseTimeRule",
+      "type": "object"
+    },
     "Scope": {
       "additionalProperties": false,
       "properties": {
@@ -368,8 +452,8 @@
       "properties": {
         "should_weighted_fraction": {
           "default": 0.9,
-          "maximum": 1,
-          "minimum": 0,
+          "maximum": 1.0,
+          "minimum": 0.0,
           "title": "Should Weighted Fraction",
           "type": "number"
         }
@@ -435,6 +519,9 @@
       "minItems": 1,
       "title": "Requirements",
       "type": "array"
+    },
+    "reuse_policy": {
+      "$ref": "#/$defs/ReusePolicy"
     },
     "schema_version": {
       "const": 1,

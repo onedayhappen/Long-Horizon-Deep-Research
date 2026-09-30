@@ -1,0 +1,86 @@
+{
+  "$defs": {
+    "RequirementReuseRule": {
+      "additionalProperties": false,
+      "properties": {
+        "requirement_id": {
+          "title": "Requirement Id",
+          "type": "string"
+        },
+        "rule": {
+          "$ref": "#/$defs/ReuseTimeRule"
+        }
+      },
+      "required": [
+        "requirement_id",
+        "rule"
+      ],
+      "title": "RequirementReuseRule",
+      "type": "object"
+    },
+    "ReuseTimeRule": {
+      "additionalProperties": false,
+      "properties": {
+        "knowledge_mode": {
+          "default": "strict_as_of",
+          "enum": [
+            "strict_as_of",
+            "retrospective"
+          ],
+          "title": "Knowledge Mode",
+          "type": "string"
+        },
+        "material_class": {
+          "default": "unclassified",
+          "enum": [
+            "volatile",
+            "news",
+            "versioned",
+            "stable",
+            "unclassified"
+          ],
+          "title": "Material Class",
+          "type": "string"
+        },
+        "max_validation_age_seconds": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Max Validation Age Seconds",
+          "type": "integer"
+        },
+        "temporal_mode": {
+          "default": "historical_as_of",
+          "enum": [
+            "historical_as_of",
+            "current_at_as_of"
+          ],
+          "title": "Temporal Mode",
+          "type": "string"
+        }
+      },
+      "title": "ReuseTimeRule",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "default_rule": {
+      "$ref": "#/$defs/ReuseTimeRule"
+    },
+    "requirement_rules": {
+      "items": {
+        "$ref": "#/$defs/RequirementReuseRule"
+      },
+      "title": "Requirement Rules",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    }
+  },
+  "title": "ReusePolicy",
+  "type": "object"
+}

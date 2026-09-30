@@ -13,6 +13,7 @@
 - **迭代研究与大纲**：根据覆盖缺口继续检索，按证据调整大纲；大纲变更保留历史版本。
 - **审核报告**：对章节和完整报告执行检查；需要补证时退回研究阶段，局部问题只修订相关章节。
 - **保存与恢复**：以 SQLite 保存运行状态、预算和事件，支持中断后继续，并导出报告、证据和覆盖结果。
+- **显式复用旧研究**：用 `--reuse-from` 导入同一 runs-root 的来源资料；按新契约选证、复核来源和双向审核。支持可恢复导入、来源谱系失效同步和历史报告回查。
 
 ## 环境与安装
 
@@ -70,6 +71,17 @@ python scripts/research_assistant.py research-runs/my-study --response response.
 `assisted` 需要外部会话持续处理请求；单独执行 `run` 不会自动获得模型或搜索结果。抓取资料的原始字节与响应哈希也要按请求要求保存。
 
 ## 查看与恢复
+
+新建研究并复用一个来源 run：
+
+```powershell
+python -m src research run --contract contracts/new-question.json --config research.toml --runs-root research-runs --run-id research-b --reuse-from research-runs/research-a
+python -m src research reuse-sync --run-dir research-runs/research-b
+```
+
+可加 `--reuse-selection selection.json`，按来源需求 ID 或精确证据版本选择材料。来源须记录创建身份；旧版本创建、缺少身份元数据的 run 会返回 `reuse_source_unverified`。详细的选择格式、时间政策、来源复核、失效通知及限制见 [旧研究复用](docs/research/reuse.md)。
+
+研究存储使用固定版本的 APSW 私有 SQLite 引擎；安装依赖时建议使用 `python -m pip install --only-binary=apsw -e ".[research,test]"`。
 
 ```bash
 python -m src research status --run-dir research-runs/my-study --json

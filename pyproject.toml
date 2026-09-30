@@ -27,7 +27,7 @@ test = [
     "pytest-asyncio",
     "httpx2",
 ]
-research = ["pydantic>=2.10,<3", "httpx>=0.27,<1", "beautifulsoup4>=4.12,<5", "pypdf>=5,<7"]
+research = ["apsw==3.53.4.0", "pydantic>=2.10,<3", "httpx>=0.27,<1", "beautifulsoup4>=4.12,<5", "pypdf>=5,<7"]
 research-zh = ["jieba>=0.42,<1"]
 
 [project.scripts]

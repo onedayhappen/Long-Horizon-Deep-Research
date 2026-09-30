@@ -70,7 +70,8 @@
         "auditor.coverage",
         "auditor.search_bias",
         "writer.section",
-        "auditor.report"
+        "auditor.report",
+        "planner.reuse_map"
       ],
       "title": "Role",
       "type": "string"

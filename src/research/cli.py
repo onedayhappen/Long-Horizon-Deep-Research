@@ -37,9 +37,6 @@ def _store(run_dir: Path, config: ResearchConfig) -> Store:
 async def _execute(run_dir: Path, contract: ResearchContract, config: ResearchConfig) -> int:
     store = _store(run_dir, config)
     try:
-        if store.run()["lifecycle_status"] == "complete":
-            print(json.dumps(store.status(), ensure_ascii=False))
-            return 0
         providers = None
         if config.research.execution.mode == "assisted":
             from .assisted import AssistantMailbox, ExternalRoleBackend, ExternalSearchProvider, ExternalFetchProvider
@@ -57,6 +54,22 @@ async def _execute(run_dir: Path, contract: ResearchContract, config: ResearchCo
         heartbeat = asyncio.create_task(controller.heartbeat_loop())
         try:
             try:
+                store.validate_integrity()
+                from .reuse import plan_import, resume_imports
+                from .reuse_models import ReuseSelection
+                request_path = run_dir / 'reuse-request.json'
+                if request_path.exists() and not store.db.execute('SELECT 1 FROM reuse_imports').fetchone():
+                    request = load(request_path)
+                    selection = ReuseSelection.model_validate(request['selection']) if request['selection'] else None
+                    plan_import(store, Path(request['source_dir']), contract, selection, controller.owner, controller.generation)
+                resume_imports(store, contract, controller.owner, controller.generation)
+                controller.reuse_barrier()
+                controller.expire_reuse()
+                if store.run()['lifecycle_status'] == 'complete':
+                    from .export import export_artifacts
+                    export_artifacts(store)
+                    print(json.dumps(store.status(), ensure_ascii=False))
+                    return 0
                 outcome = await controller.run()
                 print(json.dumps({"run_id": store.run()["run_id"], "outcome": outcome, "report": str(run_dir / "report.md")}, ensure_ascii=False))
                 return 0
@@ -103,6 +116,8 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--config", type=Path, required=True)
     run.add_argument("--runs-root", type=Path, required=True)
     run.add_argument("--run-id", required=True)
+    run.add_argument('--reuse-from', type=Path)
+    run.add_argument('--reuse-selection', type=Path)
     resume = sub.add_parser("resume", help="Resume a replay or assistant-operated run")
     resume.add_argument("--run-dir", type=Path, required=True)
     resume.add_argument("--budget-extension", type=Path)
@@ -114,6 +129,12 @@ def main(argv: list[str] | None = None) -> int:
     review = sub.add_parser("review", help="Record a human decision")
     review.add_argument("--run-dir", type=Path, required=True)
     review.add_argument("--decision", type=Path, required=True)
+    sync = sub.add_parser('reuse-sync', help='Consume authorized ancestor invalidations without model/network calls')
+    sync.add_argument('--run-dir', type=Path, required=True)
+    sync.add_argument('--source-run-dir', type=Path)
+    invalidate = sub.add_parser('invalidate', help='Record a local evidence correction and publish an invalidation notice')
+    invalidate.add_argument('--run-dir', type=Path, required=True)
+    invalidate.add_argument('--decision', type=Path, required=True)
     args = parser.parse_args(argv)
     try:
         if args.command == "model-check":
@@ -141,6 +162,15 @@ def main(argv: list[str] | None = None) -> int:
             if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", args.run_id):
                 raise ValueError("run-id must be 1-64 letters, digits, underscores or hyphens")
             contract, config = _inputs(args.contract, args.config)
+            if args.reuse_selection and not args.reuse_from:
+                raise ValueError('--reuse-selection requires --reuse-from')
+            selection = None
+            if args.reuse_selection:
+                from .reuse_models import ReuseSelection
+                selection = ReuseSelection.model_validate(load(args.reuse_selection), strict=True).model_dump()
+            if args.reuse_from:
+                from .reuse_paths import safe_path
+                safe_path(args.reuse_from, args.runs_root)
             if config.research.execution.mode == "live":
                 raise ValueError("live controller is not yet available; no live call was made")
             if config.research.execution.mode == "replay":
@@ -151,7 +181,7 @@ def main(argv: list[str] | None = None) -> int:
             if run_dir.exists():
                 raise ValueError("run directory already exists")
             run_dir.mkdir(parents=True)
-            shutil.copyfile(args.contract, run_dir / "contract.json")
+            (run_dir / 'contract.json').write_bytes(canonical(contract.model_dump(mode='json')))
             shutil.copyfile(args.config, run_dir / "research.toml")
             (run_dir / "resolved_config.json").write_bytes(canonical(config.model_dump(mode="json")))
             (run_dir / "execution.json").write_bytes(canonical({"mode": config.research.execution.mode,
@@ -160,9 +190,39 @@ def main(argv: list[str] | None = None) -> int:
                 "role_review_context": "separate_api_requests_same_model" if config.research.model.backend == "chat_json" else "single_assistant_session" if config.research.execution.mode == "assisted" else "fixed_replay",
                 "independent_model_review": False, "token_usage": None, "cost_usd": None}))
             store = _store(run_dir, config)
-            store.init_run(args.run_id, contract.version, digest(config.model_dump(mode="json")))
+            store.init_run(args.run_id, contract.version, digest(config.model_dump(mode="json")), args.runs_root)
             store.close()
+            if args.reuse_from:
+                (run_dir / 'reuse-request.json').write_bytes(canonical({'source_dir': str(args.reuse_from.absolute()), 'selection': selection}))
             return asyncio.run(_execute(run_dir, contract, config))
+        if args.command in {'reuse-sync', 'invalidate'}:
+            import time
+            import uuid
+            from .lineage import sync_lineage, relocate_source, publish_invalidation
+            from .reuse_models import InvalidationRequest
+            from .storage import now, stamp
+            store = Store(args.run_dir)
+            owner = str(uuid.uuid4())
+            generation = None
+            started = time.monotonic()
+            try:
+                generation = store.acquire(owner)
+                if args.command == 'invalidate':
+                    decision = InvalidationRequest.model_validate(load(args.decision), strict=True)
+                    sequence = publish_invalidation(store, decision, owner, generation)
+                    print(json.dumps({'invalidation_sequence': sequence}))
+                    return 0
+                if args.source_run_dir:
+                    relocate_source(store, args.source_run_dir, owner, generation)
+                synced = sync_lineage(store, owner, generation)
+                print(json.dumps(store.status(), ensure_ascii=False))
+                return 0 if synced else 3
+            finally:
+                if generation is not None:
+                    with store.transaction() as db:
+                        db.execute("INSERT INTO events(state_version,kind,payload_json,created_at) VALUES(?,'active_time',?,?)", (store.run()['state_version'], canonical({'seconds': time.monotonic()-started}).decode(), stamp(now())))
+                    store.release(owner, generation)
+                store.close()
         if args.command == "resume":
             if args.budget_extension:
                 raise ValueError("budget extension is not implemented")

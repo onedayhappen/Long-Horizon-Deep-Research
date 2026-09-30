@@ -78,4 +78,7 @@ def reindex(root):
             finally:
                 controller.close(); store.close()
     manifest['roles'] = indexed
-    (root/'fixture_manifest.json').write_bytes(canonical(manifest))
+    import os
+    temporary = root / 'fixture_manifest.pending.json'
+    temporary.write_bytes(canonical(manifest))
+    os.replace(temporary, root / 'fixture_manifest.json')

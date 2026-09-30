@@ -1,0 +1,27 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "source_evidence_version_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Source Evidence Version Ids",
+      "type": "array"
+    },
+    "source_question_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Source Question Ids",
+      "type": "array"
+    }
+  },
+  "title": "ReuseSelection",
+  "type": "object"
+}

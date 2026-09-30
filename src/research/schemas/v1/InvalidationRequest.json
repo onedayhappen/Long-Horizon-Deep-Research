@@ -1,0 +1,54 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "affected_requirement_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Affected Requirement Ids",
+      "type": "array"
+    },
+    "evidence_refs": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Evidence Refs",
+      "type": "array"
+    },
+    "reason_code": {
+      "enum": [
+        "content_error",
+        "withdrawn",
+        "parser_error",
+        "source_identity_error",
+        "audit_revoked",
+        "local_corruption"
+      ],
+      "title": "Reason Code",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "subject_version_ids": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 128,
+      "minItems": 1,
+      "title": "Subject Version Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "subject_version_ids",
+    "reason_code",
+    "evidence_refs"
+  ],
+  "title": "InvalidationRequest",
+  "type": "object"
+}

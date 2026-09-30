@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "contract_id": "fictional-reuse-target",
+  "version": 1,
+  "question": "截至指定日期，虚构产品 A 的官方资料是否声明支持导出？",
+  "scope": {
+    "subjects": [
+      "虚构产品 A"
+    ],
+    "regions": [],
+    "versions": [],
+    "include": [
+      "官方功能声明"
+    ],
+    "exclude": [
+      "独立性能验证"
+    ]
+  },
+  "as_of": "2026-09-01T00:00:00Z",
+  "requirements": [
+    {
+      "id": "R1",
+      "question": "说明官方是否声明支持导出，并保留归因",
+      "priority": "must",
+      "weight": 1,
+      "allow_unknown": false,
+      "unknown_check_ids": [],
+      "acceptance_checks": [
+        {
+          "check_id": "R1.support",
+          "code": "has_current_support",
+          "stage": "research",
+          "params": {
+            "claim_kinds": [
+              "attributed"
+            ],
+            "min_claims": 1
+          },
+          "reason": "需要可定位官方原文"
+        },
+        {
+          "check_id": "R1.attribution",
+          "code": "source_attribution",
+          "stage": "research",
+          "params": {
+            "required_class": "primary_official"
+          },
+          "reason": "只回答官方声明"
+        },
+        {
+          "check_id": "R1.answer",
+          "code": "answer_in_report",
+          "stage": "delivery",
+          "params": {
+            "require_limitation_disclosure": true
+          },
+          "reason": "正文回答且不写成独立验证"
+        }
+      ]
+    }
+  ],
+  "output_contract": {
+    "language": "zh-CN",
+    "format": "markdown",
+    "required_sections": [
+      "结论",
+      "依据与限制"
+    ],
+    "max_characters": 6000
+  },
+  "stop_policy": {
+    "should_weighted_fraction": 0.9
+  },
+  "reuse_policy": {
+    "schema_version": 1,
+    "default_rule": {
+      "temporal_mode": "historical_as_of",
+      "knowledge_mode": "strict_as_of",
+      "material_class": "stable",
+      "max_validation_age_seconds": 3600
+    },
+    "requirement_rules": []
+  }
+}

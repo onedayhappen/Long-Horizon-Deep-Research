@@ -179,6 +179,27 @@ class StopPolicy(StrictModel):
     should_weighted_fraction: float = Field(default=0.90, ge=0, le=1)
 
 
+class ReuseTimeRule(StrictModel):
+    temporal_mode: Literal['historical_as_of', 'current_at_as_of'] = 'historical_as_of'
+    knowledge_mode: Literal['strict_as_of', 'retrospective'] = 'strict_as_of'
+    material_class: Literal['volatile', 'news', 'versioned', 'stable', 'unclassified'] = 'unclassified'
+    max_validation_age_seconds: int = Field(default=0, ge=0)
+
+
+class RequirementReuseRule(StrictModel):
+    requirement_id: str
+    rule: ReuseTimeRule
+
+
+class ReusePolicy(StrictModel):
+    schema_version: Literal[1] = 1
+    default_rule: ReuseTimeRule = Field(default_factory=ReuseTimeRule)
+    requirement_rules: list[RequirementReuseRule] = Field(default_factory=list)
+
+    def rule_for(self, requirement_id):
+        return next((item.rule for item in self.requirement_rules if item.requirement_id == requirement_id), self.default_rule)
+
+
 class ResearchContract(StrictModel):
     schema_version: Literal[1]
     contract_id: str = Field(min_length=1)
@@ -189,6 +210,7 @@ class ResearchContract(StrictModel):
     requirements: list[Requirement] = Field(min_length=1)
     output_contract: OutputContract
     stop_policy: StopPolicy = Field(default_factory=StopPolicy)
+    reuse_policy: ReusePolicy = Field(default_factory=ReusePolicy)
 
     @model_validator(mode="after")
     def validate_contract(self) -> "ResearchContract":
@@ -199,6 +221,12 @@ class ResearchContract(StrictModel):
         checks = [c.check_id for r in self.requirements for c in r.acceptance_checks]
         if len(set(ids)) != len(ids) or len(set(checks)) != len(checks):
             raise ValueError("duplicate requirement or check ID")
+        rule_ids = [r.requirement_id for r in self.reuse_policy.requirement_rules]
+        if len(rule_ids) != len(set(rule_ids)) or not set(rule_ids) <= set(ids):
+            raise ValueError('reuse_policy has duplicate or unknown requirement IDs')
+        for requirement in self.requirements:
+            if self.reuse_policy.rule_for(requirement.id).temporal_mode == 'current_at_as_of' and not any(c.code == CheckCode.FRESHNESS for c in requirement.acceptance_checks):
+                raise ValueError('current_at_as_of requires a freshness check')
         return self
 
 
@@ -401,7 +429,7 @@ ResearchAction = Annotated[SearchAction | OutlinePatchAction | TerminateProposal
 
 
 class RoleRequest(StrictModel):
-    role: Literal["planner.initialize", "auditor.question_space", "planner.next", "researcher.extract", "auditor.evidence", "auditor.counter_entailment", "auditor.provenance", "auditor.conflict", "auditor.coverage", "auditor.search_bias", "writer.section", "auditor.report"]
+    role: Literal["planner.initialize", "auditor.question_space", "planner.next", "researcher.extract", "auditor.evidence", "auditor.counter_entailment", "auditor.provenance", "auditor.conflict", "auditor.coverage", "auditor.search_bias", "writer.section", "auditor.report", "planner.reuse_map"]
     logical_action_key: str
     input_manifest_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
     contract_version: int = Field(gt=0)

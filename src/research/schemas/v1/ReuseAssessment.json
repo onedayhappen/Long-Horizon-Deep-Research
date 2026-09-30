@@ -1,0 +1,127 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "checks": {
+      "additionalProperties": {
+        "enum": [
+          "pass",
+          "fail",
+          "unknown"
+        ],
+        "type": "string"
+      },
+      "title": "Checks",
+      "type": "object"
+    },
+    "claim_version_id": {
+      "title": "Claim Version Id",
+      "type": "string"
+    },
+    "contract_version": {
+      "title": "Contract Version",
+      "type": "integer"
+    },
+    "critical_reasons": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Critical Reasons",
+      "type": "array"
+    },
+    "disposition": {
+      "enum": [
+        "reuse_candidate",
+        "reused",
+        "requires_refresh",
+        "rejected",
+        "needs_reaudit"
+      ],
+      "title": "Disposition",
+      "type": "string"
+    },
+    "evaluated_at": {
+      "title": "Evaluated At",
+      "type": "string"
+    },
+    "evidence_version_id": {
+      "title": "Evidence Version Id",
+      "type": "string"
+    },
+    "generation": {
+      "title": "Generation",
+      "type": "integer"
+    },
+    "import_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Import Id"
+    },
+    "input_manifest_hash": {
+      "title": "Input Manifest Hash",
+      "type": "string"
+    },
+    "local_audit_refs": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Local Audit Refs",
+      "type": "array"
+    },
+    "policy_hash": {
+      "title": "Policy Hash",
+      "type": "string"
+    },
+    "reason_codes": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Reason Codes",
+      "type": "array"
+    },
+    "recheck_due_at": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Recheck Due At"
+    },
+    "requirement_id": {
+      "title": "Requirement Id",
+      "type": "string"
+    },
+    "validation_refs": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Validation Refs",
+      "type": "array"
+    }
+  },
+  "required": [
+    "import_id",
+    "evidence_version_id",
+    "claim_version_id",
+    "requirement_id",
+    "contract_version",
+    "policy_hash",
+    "input_manifest_hash",
+    "checks",
+    "disposition",
+    "reason_codes",
+    "evaluated_at",
+    "generation"
+  ],
+  "title": "ReuseAssessment",
+  "type": "object"
+}

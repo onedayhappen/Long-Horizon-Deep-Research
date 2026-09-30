@@ -1,0 +1,59 @@
+{
+  "$defs": {
+    "ReuseBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "claim_version_id": {
+          "title": "Claim Version Id",
+          "type": "string"
+        },
+        "evidence_version_id": {
+          "title": "Evidence Version Id",
+          "type": "string"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "requirement_id": {
+          "title": "Requirement Id",
+          "type": "string"
+        },
+        "scope_matches": {
+          "title": "Scope Matches",
+          "type": "boolean"
+        },
+        "time_matches": {
+          "title": "Time Matches",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "evidence_version_id",
+        "claim_version_id",
+        "requirement_id",
+        "scope_matches",
+        "time_matches",
+        "reason"
+      ],
+      "title": "ReuseBinding",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "bindings": {
+      "items": {
+        "$ref": "#/$defs/ReuseBinding"
+      },
+      "title": "Bindings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "bindings"
+  ],
+  "title": "ReuseMappingProposal",
+  "type": "object"
+}

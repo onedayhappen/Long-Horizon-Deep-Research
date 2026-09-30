@@ -65,6 +65,13 @@ class ResearchLoopMixin:
         result['evidence_audits'] = [r for r in self.heads('audit') if 'forward' in r['payload']]
         result['links'] = [dict(r) for r in self.store.db.execute('SELECT * FROM evidence_links ORDER BY link_id')]
         result['report_gaps'] = self.heads('report_gap')
+        if self.store.db.execute('SELECT 1 FROM reuse_imports LIMIT 1').fetchone():
+            from .reuse import reuse_summary
+            result['reuse_summary'] = reuse_summary(self.store)
+            # Operational sync timestamps do not affect semantic model hashes.
+            result['reuse_summary'].pop('lineage', None)
+            result['investigation_history'] = self.heads('investigation_history')
+            result['reuse_assessments'] = self.heads('reuse_assessment')
         return result
 
     def planner_digest(self):
@@ -97,6 +104,9 @@ class ResearchLoopMixin:
             if verdict.get('forward', {}).get('verdict') != 'supported' or verdict.get('reverse', {}).get('verdict') != 'no_objection':
                 continue
             if c['payload'].get('validity') != 'current' or e['payload'].get('validity') != 'active':
+                continue
+            binding = self.store.db.execute('SELECT * FROM reuse_bindings WHERE local_claim_version_id=?', (c['version_id'],)).fetchone()
+            if binding and not self.reuse_binding_valid(binding):
                 continue
             signature = digest({'text': ' '.join(c['payload']['text'].split()).casefold(), 'kind': c['payload']['kind'], 'requirements': sorted(c['payload']['requirement_ids'])})
             canonical_id = semantic_claims.setdefault(signature, c['version_id'])
@@ -169,6 +179,7 @@ class ResearchLoopMixin:
             self.commit('loop:initialize', state, [('loop','controller',state)])
         while True:
             self.tick()
+            await self.review_reuse()
             self.phase('researching')
             state = self.head('loop', 'controller')['payload']
             step = state['step']
@@ -183,7 +194,7 @@ class ResearchLoopMixin:
                 outline = OutlineState.model_validate(self.head('outline','outline')['payload'])
                 question_audit = await self.question_audit(outline)
                 assessments, assessment_refs, bias, gates = [], {}, None, None
-                if self.heads('query_result'):
+                if self.heads('query_result') or any(self.evidence_rows().values()):
                     assessments, assessment_refs, bias, gates = await self.assess(outline, question_audit)
                 packet = {'requirement_ids': requirements, 'question_ids': outline.question_ids,
                           'outline_json': outline.model_dump_json(), 'research_digest_json': canonical(self.planner_digest()).decode(),
@@ -193,12 +204,15 @@ class ResearchLoopMixin:
                           'rounds_completed': state['rounds'], 'rounds_remaining': max(0, self.max_rounds-state['rounds']),
                           'recent_rounds_json': canonical(state['recent_rounds'][-3:]).decode(), 'last_feedback': state['last_feedback'],
                           'budget_json': canonical(self.budget.snapshot()).decode()}
-                action = await self.role('planner.next', f'plan:{step}', packet, TypeAdapter(ResearchAction))
+                action_key = f'plan:{step}'
+                if self.store.db.execute('SELECT 1 FROM reuse_imports LIMIT 1').fetchone():
+                    action_key += ':reuse:' + digest(packet)
+                action = await self.role('planner.next', action_key, packet, TypeAdapter(ResearchAction))
                 plan = dict(action=action.model_dump(mode='json'), before_novelty=self.novelty_keys(),
                             outline=outline.model_dump(mode='json'), question_audit=question_audit.model_dump(mode='json'),
                             assessments=[a.model_dump(mode='json') for a in assessments], assessment_refs=assessment_refs,
                             bias_passed=bool(bias and bias.review_status == 'pass'))
-                self.commit(f'plan:{step}', plan, [('plan',str(step),plan)])
+                self.commit(action_key, plan, [('plan',str(step),plan)])
             else:
                 plan = pending['payload']
                 action = TypeAdapter(ResearchAction).validate_python(plan['action'], strict=True)
@@ -250,7 +264,10 @@ class ResearchLoopMixin:
                         freeze = dict(outline_version=outline.outline_version, coverage_refs=list(assessment_refs.values()),
                             question_space_passed=question_audit.review_status=='pass', search_bias_passed=plan['bias_passed'],
                             coverage_audit_passed=len(assessments)==len(contract.requirements))
-                        self.commit(f'freeze:{step}', freeze, [('freeze','outline',freeze)])
+                        freeze_key = f'freeze:{step}'
+                        if self.store.db.execute('SELECT 1 FROM reuse_imports LIMIT 1').fetchone():
+                            freeze_key += ':' + digest(freeze)
+                        self.commit(freeze_key, freeze, [('freeze','outline',freeze)])
                         return await self.write_report(outline, assessments, assessment_refs)
                     if action.proposed_outcome == 'incomplete_plateau':
                         window = state['recent_rounds'][-self.saturation_effective_rounds:]

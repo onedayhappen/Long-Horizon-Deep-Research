@@ -19,11 +19,13 @@ class ProtocolError(RuntimeError):
 
 
 def response_schema(name: str, version: int) -> dict:
+    from .reuse_models import ReuseMappingProposal
     allowed = {cls.__name__: cls for cls in (
         models.InitializationProposal, models.QuestionSpaceAudit,
         models.CandidateEvidenceBundle, models.EvidenceAuditVerdict,
         models.CounterAuditVerdict, models.SearchBiasVerdict,
         models.CoverageProposal, models.DraftSection, models.ReportAudit,
+        ReuseMappingProposal,
     )}
     if version != 1 or name not in {*allowed, "ResearchAction"}:
         raise ProtocolError("unsupported role response schema")
