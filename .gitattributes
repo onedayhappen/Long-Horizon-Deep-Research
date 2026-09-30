@@ -1,0 +1,2 @@
+# Replay manifests hash source bytes, so checkout must preserve exact contents.
+tests/fixtures/research/** -text
