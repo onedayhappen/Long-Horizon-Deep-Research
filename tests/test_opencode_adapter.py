@@ -7,14 +7,14 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from lh_harness import agent_logs
-from lh_harness.adapters import opencode as opencode_adapter_module
-from lh_harness.adapters.opencode import OpenCodeAdapter
-from lh_harness.environment.local import LocalEnvironment
-from lh_harness.provider_errors import classify_agent_runtime_failure
-from lh_harness.types import DEFAULT_OPENCODE_MODEL, EpisodeBudget, EpisodeResult
-from lh_harness.utils.agent_cli import resolve_opencode_binary
-from lh_harness.webapi import server as web_server
+from src import agent_logs
+from src.adapters import opencode as opencode_adapter_module
+from src.adapters.opencode import OpenCodeAdapter
+from src.environment.local import LocalEnvironment
+from src.provider_errors import classify_agent_runtime_failure
+from src.types import DEFAULT_OPENCODE_MODEL, EpisodeBudget, EpisodeResult
+from src.utils.agent_cli import resolve_opencode_binary
+from src.webapi import server as web_server
 
 
 def _executable(path: Path, body: str) -> str:

@@ -2,7 +2,7 @@ import uuid
 
 import pytest
 
-from lh_harness.research.storage import RevisionConflict, RunBusy, Store
+from src.research.storage import RevisionConflict, RunBusy, Store
 
 
 def test_commit_idempotency_and_stale(tmp_path):
@@ -34,7 +34,7 @@ def test_kind_and_lease_fencing(tmp_path):
     fake_claim = dict(receipt["refs"][0], kind="claim")
     with pytest.raises(ValueError):
         with store.transaction() as db:
-            from lh_harness.research.models import EntityRef
+            from src.research.models import EntityRef
             store.validate_ref(db, EntityRef.model_validate(fake_claim))
     store.close()
 

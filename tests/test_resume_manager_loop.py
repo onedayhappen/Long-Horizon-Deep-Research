@@ -9,9 +9,9 @@ from typing import Any
 
 import pytest
 
-from lh_harness.environment.local import LocalEnvironment
-from lh_harness.manager import run
-from lh_harness.types import EpisodeResult, HarnessConfig, ManagedRound
+from src.environment.local import LocalEnvironment
+from src.manager import run
+from src.types import EpisodeResult, HarnessConfig, ManagedRound
 
 # The manager reply that routes one more CLI executor round, and the reply that
 # claims completion.  Completion is only accepted when the previous auditor

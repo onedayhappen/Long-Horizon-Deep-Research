@@ -23,27 +23,27 @@ Deep Research is an evidence based research and report workflow. Define a questi
 python -m pip install -e ".[research,test]"
 ```
 
-The current command entry point is `lh-harness research`. You can also use `python -m lh_harness research`, as in the examples below.
+The current command entry point is `lh-harness research`. You can also use `python -m src research`, as in the examples below.
 
 ## Quick start: offline replay
 
 The repository includes a **fictional** source fixture for checking the workflow. It does not produce a real research finding.
 
 ```bash
-python -m lh_harness research validate \
+python -m src research validate \
   --contract tests/fixtures/research/success/contract.json \
   --config tests/fixtures/research/success/research.toml
 
-python -m lh_harness research run \
+python -m src research run \
   --contract tests/fixtures/research/success/contract.json \
   --config tests/fixtures/research/success/research.toml \
   --runs-root .lh-harness/demo-runs \
   --run-id example-001
 
-python -m lh_harness research status \
+python -m src research status \
   --run-dir .lh-harness/demo-runs/example-001 --json
 
-python -m lh_harness research export \
+python -m src research export \
   --run-dir .lh-harness/demo-runs/example-001
 ```
 
@@ -57,8 +57,8 @@ The line continuations above are for Bash; enter each command on one line in Pow
 4. When the program emits `ASSISTANT_REQUEST`, read the request and submit the JSON response for that stage. Responses must match the request ID and input hash. Fetched source bytes must be stored under the required SHA-256 hash.
 
 ```powershell
-python -m lh_harness research validate --contract examples/research/assisted/python_threads_contract.json --config examples/research/assisted/research.toml
-python -m lh_harness research run --contract examples/research/assisted/python_threads_contract.json --config examples/research/assisted/research.toml --runs-root research-runs --run-id my-study
+python -m src research validate --contract examples/research/assisted/python_threads_contract.json --config examples/research/assisted/research.toml
+python -m src research run --contract examples/research/assisted/python_threads_contract.json --config examples/research/assisted/research.toml --runs-root research-runs --run-id my-study
 
 # In another terminal, inspect the pending request
 python scripts/research_assistant.py research-runs/my-study --full
@@ -72,9 +72,9 @@ python scripts/research_assistant.py research-runs/my-study --response response.
 ## Inspect and resume
 
 ```bash
-python -m lh_harness research status --run-dir research-runs/my-study --json
-python -m lh_harness research resume --run-dir research-runs/my-study
-python -m lh_harness research export --run-dir research-runs/my-study
+python -m src research status --run-dir research-runs/my-study --json
+python -m src research resume --run-dir research-runs/my-study
+python -m src research export --run-dir research-runs/my-study
 ```
 
 A run directory typically contains:

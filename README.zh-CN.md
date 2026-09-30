@@ -23,27 +23,27 @@
 python -m pip install -e ".[research,test]"
 ```
 
-当前命令入口为 `lh-harness research`，也可以通过 `python -m lh_harness research` 调用。下文使用后一种写法，便于在源码目录直接运行。
+当前命令入口为 `lh-harness research`，也可以通过 `python -m src research` 调用。下文使用后一种写法，便于在源码目录直接运行。
 
 ## 快速体验：离线回放
 
 仓库提供虚构资料的测试样例。它用于验证完整流程，**不代表真实联网研究结论**。
 
 ```bash
-python -m lh_harness research validate \
+python -m src research validate \
   --contract tests/fixtures/research/success/contract.json \
   --config tests/fixtures/research/success/research.toml
 
-python -m lh_harness research run \
+python -m src research run \
   --contract tests/fixtures/research/success/contract.json \
   --config tests/fixtures/research/success/research.toml \
   --runs-root .lh-harness/demo-runs \
   --run-id example-001
 
-python -m lh_harness research status \
+python -m src research status \
   --run-dir .lh-harness/demo-runs/example-001 --json
 
-python -m lh_harness research export \
+python -m src research export \
   --run-dir .lh-harness/demo-runs/example-001
 ```
 
@@ -57,8 +57,8 @@ Windows PowerShell 中可将每条命令写成单行；上述反斜杠续行适�
 4. 程序发出 `ASSISTANT_REQUEST` 后，读取请求并提交与请求 ID、输入哈希匹配的 JSON 响应；按阶段提供实际检索结果、原文资料或角色输出。
 
 ```powershell
-python -m lh_harness research validate --contract examples/research/assisted/python_threads_contract.json --config examples/research/assisted/research.toml
-python -m lh_harness research run --contract examples/research/assisted/python_threads_contract.json --config examples/research/assisted/research.toml --runs-root research-runs --run-id my-study
+python -m src research validate --contract examples/research/assisted/python_threads_contract.json --config examples/research/assisted/research.toml
+python -m src research run --contract examples/research/assisted/python_threads_contract.json --config examples/research/assisted/research.toml --runs-root research-runs --run-id my-study
 
 # 在另一个终端查看待处理请求
 python scripts/research_assistant.py research-runs/my-study --full
@@ -72,9 +72,9 @@ python scripts/research_assistant.py research-runs/my-study --response response.
 ## 查看与恢复
 
 ```bash
-python -m lh_harness research status --run-dir research-runs/my-study --json
-python -m lh_harness research resume --run-dir research-runs/my-study
-python -m lh_harness research export --run-dir research-runs/my-study
+python -m src research status --run-dir research-runs/my-study --json
+python -m src research resume --run-dir research-runs/my-study
+python -m src research export --run-dir research-runs/my-study
 ```
 
 典型运行目录包含：

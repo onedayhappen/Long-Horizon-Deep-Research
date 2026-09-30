@@ -4,9 +4,9 @@ import json
 
 import pytest
 
-from lh_harness.research.assisted import AssistantMailbox, ExternalFetchProvider
-from lh_harness.research.jsonio import canonical, digest
-from lh_harness.research.models import FetchRequest
+from src.research.assisted import AssistantMailbox, ExternalFetchProvider
+from src.research.jsonio import canonical, digest
+from src.research.models import FetchRequest
 
 
 def answer(mailbox, kind, key, payload, result, *, wrong_hash=False):

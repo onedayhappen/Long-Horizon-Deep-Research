@@ -53,7 +53,7 @@ class Store:
         if self.db.execute("PRAGMA user_version").fetchone()[0] > 1:
             raise RuntimeError("database schema is newer than this program")
         if self.db.execute("PRAGMA user_version").fetchone()[0] == 0 and not readonly:
-            migration = files("lh_harness.research").joinpath("migrations/001_initial.sql").read_text("utf-8")
+            migration = files("src.research").joinpath("migrations/001_initial.sql").read_text("utf-8")
             self.db.executescript("BEGIN IMMEDIATE;\n" + migration + "\nPRAGMA user_version=1;\nCOMMIT;")
 
     def close(self) -> None:

@@ -4,10 +4,10 @@ import json
 import httpx
 import pytest
 
-from lh_harness.research.jsonio import digest
-from lh_harness.research.model_backend import ChatJsonRoleBackend, ProtocolError
-from lh_harness.research.models import RoleRequest
-from lh_harness.research.prompts import template
+from src.research.jsonio import digest
+from src.research.model_backend import ChatJsonRoleBackend, ProtocolError
+from src.research.models import RoleRequest
+from src.research.prompts import template
 
 
 def request():

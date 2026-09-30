@@ -9,11 +9,11 @@ from pathlib import Path
 
 import pytest
 
-import lh_harness.supervisor.control_bus as control_bus
-import lh_harness.supervisor.service as supervisor_service
-from lh_harness.dashboard.state import ApprovalOption, DashboardState
-from lh_harness.supervisor.control_bus import ControlBus, RevisionConflict, iter_run_control_dirs
-from lh_harness.supervisor.service import IdempotencyConflict, RunSupervisor
+import src.supervisor.control_bus as control_bus
+import src.supervisor.service as supervisor_service
+from src.dashboard.state import ApprovalOption, DashboardState
+from src.supervisor.control_bus import ControlBus, RevisionConflict, iter_run_control_dirs
+from src.supervisor.service import IdempotencyConflict, RunSupervisor
 
 
 class _Process:
@@ -28,7 +28,7 @@ class _Process:
 
 def test_nonzero_worker_exit_is_failed_and_persists_crash_report(monkeypatch, tmp_path: Path) -> None:
     process = _Process(7)
-    monkeypatch.setattr("lh_harness.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
+    monkeypatch.setattr("src.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
     supervisor = RunSupervisor(tmp_path / "runs", workspace_root=tmp_path / "workspace")
     created = supervisor.create_run(task="crash me")
     run_dir = tmp_path / "runs" / created["id"]
@@ -48,7 +48,7 @@ def test_nonzero_worker_exit_is_failed_and_persists_crash_report(monkeypatch, tm
 
 def test_end_at_approval_gate_is_cancelled_not_failed(monkeypatch, tmp_path: Path) -> None:
     process = _Process()
-    monkeypatch.setattr("lh_harness.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
+    monkeypatch.setattr("src.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
     runs_root = tmp_path / "runs"
     supervisor = RunSupervisor(runs_root, workspace_root=tmp_path / "workspace")
     created = supervisor.create_run(task="finish at the round limit")
@@ -129,7 +129,7 @@ def test_historical_completed_report_without_evidence_projects_failed(tmp_path: 
 
 def test_failure_report_does_not_follow_existing_report_symlink(monkeypatch, tmp_path: Path) -> None:
     process = _Process(7)
-    monkeypatch.setattr("lh_harness.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
+    monkeypatch.setattr("src.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
     supervisor = RunSupervisor(tmp_path / "runs", workspace_root=tmp_path / "workspace")
     created = supervisor.create_run(task="crash without redirect")
     run_dir = tmp_path / "runs" / created["id"]
@@ -149,7 +149,7 @@ def test_failure_report_does_not_follow_existing_report_symlink(monkeypatch, tmp
 
 def test_resume_rejects_active_run(monkeypatch, tmp_path: Path) -> None:
     process = _Process()
-    monkeypatch.setattr("lh_harness.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
+    monkeypatch.setattr("src.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
     supervisor = RunSupervisor(tmp_path / "runs", workspace_root=tmp_path / "workspace")
     created = supervisor.create_run(task="still running")
 
@@ -159,7 +159,7 @@ def test_resume_rejects_active_run(monkeypatch, tmp_path: Path) -> None:
 
 def test_workspace_must_stay_inside_configured_root(monkeypatch, tmp_path: Path) -> None:
     process = _Process()
-    monkeypatch.setattr("lh_harness.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
+    monkeypatch.setattr("src.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
     root = tmp_path / "workspace"
     supervisor = RunSupervisor(tmp_path / "runs", workspace_root=root)
 
@@ -320,7 +320,7 @@ def test_create_recovery_rejects_tmp_symlink_before_worker_launch(
         launches.append((args, kwargs))
         return _Process()
 
-    monkeypatch.setattr("lh_harness.supervisor.service.subprocess.Popen", launch)
+    monkeypatch.setattr("src.supervisor.service.subprocess.Popen", launch)
     root = tmp_path / "runs"
     run = root / "reserved"
     run.mkdir(parents=True)
@@ -398,8 +398,8 @@ def test_stop_keeps_stopping_state_while_stale_approval_is_present(
     """A stop request must not be hidden by the approval projection."""
 
     process = _Process()
-    monkeypatch.setattr("lh_harness.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
-    monkeypatch.setattr("lh_harness.supervisor.service.os.killpg", lambda *args, **kwargs: None)
+    monkeypatch.setattr("src.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
+    monkeypatch.setattr("src.supervisor.service.os.killpg", lambda *args, **kwargs: None)
     supervisor = RunSupervisor(tmp_path / "runs", workspace_root=tmp_path / "workspace")
     created = supervisor.create_run(task="stop me")
     run_dir = tmp_path / "runs" / created["id"]
@@ -424,8 +424,8 @@ def test_abort_escalates_stop_and_cross_action_retries_are_idempotent(
 ) -> None:
     process = _Process()
     signals: list[object] = []
-    monkeypatch.setattr("lh_harness.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
-    monkeypatch.setattr("lh_harness.supervisor.service.os.killpg", lambda _pid, sig: signals.append(sig))
+    monkeypatch.setattr("src.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
+    monkeypatch.setattr("src.supervisor.service.os.killpg", lambda _pid, sig: signals.append(sig))
     supervisor = RunSupervisor(tmp_path / "runs", workspace_root=tmp_path / "workspace")
     created = supervisor.create_run(task="stop then abort")
 
@@ -445,8 +445,8 @@ def test_abort_escalates_stop_and_cross_action_retries_are_idempotent(
 def test_stop_after_abort_returns_abort_receipt_without_conflict(monkeypatch, tmp_path: Path) -> None:
     process = _Process()
     signals: list[object] = []
-    monkeypatch.setattr("lh_harness.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
-    monkeypatch.setattr("lh_harness.supervisor.service.os.killpg", lambda _pid, sig: signals.append(sig))
+    monkeypatch.setattr("src.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
+    monkeypatch.setattr("src.supervisor.service.os.killpg", lambda _pid, sig: signals.append(sig))
     supervisor = RunSupervisor(tmp_path / "runs", workspace_root=tmp_path / "workspace")
     created = supervisor.create_run(task="abort then stop")
 
@@ -461,7 +461,7 @@ def test_stop_after_abort_returns_abort_receipt_without_conflict(monkeypatch, tm
 
 def test_first_role_event_promotes_starting_worker_to_running(monkeypatch, tmp_path: Path) -> None:
     process = _Process()
-    monkeypatch.setattr("lh_harness.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
+    monkeypatch.setattr("src.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
     supervisor = RunSupervisor(tmp_path / "runs", workspace_root=tmp_path / "workspace")
     created = supervisor.create_run(task="promote after first event")
     run_dir = tmp_path / "runs" / created["id"]
@@ -483,7 +483,7 @@ def test_stale_status_poll_cannot_overwrite_concurrent_stop(
     """The read/merge/write lifecycle update is serialized across processes."""
 
     process = _Process()
-    monkeypatch.setattr("lh_harness.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
+    monkeypatch.setattr("src.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
     supervisor = RunSupervisor(tmp_path / "runs", workspace_root=tmp_path / "workspace")
     created = supervisor.create_run(task="race status")
     entered = threading.Event()
@@ -494,7 +494,7 @@ def test_stale_status_poll_cannot_overwrite_concurrent_stop(
         assert release.wait(timeout=3)
         return False
 
-    monkeypatch.setattr("lh_harness.supervisor.service._pending_approval", delayed_pending)
+    monkeypatch.setattr("src.supervisor.service._pending_approval", delayed_pending)
     result: dict[str, object] = {}
 
     def poll() -> None:
@@ -597,13 +597,13 @@ def test_finalize_attached_run_persists_terminal_state_before_keep_dashboard(tmp
 
 def test_stop_persists_intent_before_signal(monkeypatch, tmp_path: Path) -> None:
     process = _Process()
-    monkeypatch.setattr("lh_harness.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
+    monkeypatch.setattr("src.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
     observed: list[str] = []
 
     def killpg(_pid: int, _sig: object) -> None:
         observed.append(ControlBus(tmp_path / "runs" / created["id"]).read_status().get("status", ""))
 
-    monkeypatch.setattr("lh_harness.supervisor.service.os.killpg", killpg)
+    monkeypatch.setattr("src.supervisor.service.os.killpg", killpg)
     supervisor = RunSupervisor(tmp_path / "runs", workspace_root=tmp_path / "workspace")
     created = supervisor.create_run(task="ordering")
     supervisor.stop(created["id"])
@@ -612,8 +612,8 @@ def test_stop_persists_intent_before_signal(monkeypatch, tmp_path: Path) -> None
 
 def test_signal_process_lookup_reconciles_stopping_to_failed(monkeypatch, tmp_path: Path) -> None:
     process = _Process()
-    monkeypatch.setattr("lh_harness.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
-    monkeypatch.setattr("lh_harness.supervisor.service.os.killpg", lambda *args, **kwargs: (_ for _ in ()).throw(ProcessLookupError()))
+    monkeypatch.setattr("src.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
+    monkeypatch.setattr("src.supervisor.service.os.killpg", lambda *args, **kwargs: (_ for _ in ()).throw(ProcessLookupError()))
     supervisor = RunSupervisor(tmp_path / "runs", workspace_root=tmp_path / "workspace")
     created = supervisor.create_run(task="vanish")
 
@@ -628,8 +628,8 @@ def test_signal_process_lookup_reconciles_stopping_to_failed(monkeypatch, tmp_pa
 
 def test_signal_permission_failure_restores_active_state(monkeypatch, tmp_path: Path) -> None:
     process = _Process()
-    monkeypatch.setattr("lh_harness.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
-    monkeypatch.setattr("lh_harness.supervisor.service.os.killpg", lambda *args, **kwargs: (_ for _ in ()).throw(PermissionError()))
+    monkeypatch.setattr("src.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
+    monkeypatch.setattr("src.supervisor.service.os.killpg", lambda *args, **kwargs: (_ for _ in ()).throw(PermissionError()))
     supervisor = RunSupervisor(tmp_path / "runs", workspace_root=tmp_path / "workspace")
     created = supervisor.create_run(task="permission")
 
@@ -644,9 +644,9 @@ def test_signal_permission_failure_restores_active_state(monkeypatch, tmp_path: 
 
 def test_pending_lifecycle_command_is_replayed_after_supervisor_restart(monkeypatch, tmp_path: Path) -> None:
     process = _Process()
-    monkeypatch.setattr("lh_harness.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
+    monkeypatch.setattr("src.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
     sent: list[object] = []
-    monkeypatch.setattr("lh_harness.supervisor.service.os.killpg", lambda pid, sig: sent.append((pid, sig)))
+    monkeypatch.setattr("src.supervisor.service.os.killpg", lambda pid, sig: sent.append((pid, sig)))
     supervisor = RunSupervisor(tmp_path / "runs", workspace_root=tmp_path / "workspace")
     created = supervisor.create_run(task="replay stop")
     bus = ControlBus(tmp_path / "runs" / created["id"])
@@ -672,7 +672,7 @@ def test_create_idempotency_reuses_worker_and_rejects_conflicting_payload(monkey
         launches.append(True)
         return process
 
-    monkeypatch.setattr("lh_harness.supervisor.service.subprocess.Popen", launch)
+    monkeypatch.setattr("src.supervisor.service.subprocess.Popen", launch)
     supervisor = RunSupervisor(tmp_path / "runs", workspace_root=tmp_path / "workspace")
     first = supervisor.create_run(task="same", idempotency_key="create-1")
     second = supervisor.create_run(task="same", idempotency_key="create-1")
@@ -694,7 +694,7 @@ def test_worker_command_forwards_selected_agent_and_model(monkeypatch, tmp_path:
         return process
 
     monkeypatch.setenv("PYTHONPATH", "relative-source")
-    monkeypatch.setattr("lh_harness.supervisor.service.subprocess.Popen", launch)
+    monkeypatch.setattr("src.supervisor.service.subprocess.Popen", launch)
     supervisor = RunSupervisor(tmp_path / "runs", workspace_root=tmp_path / "workspace")
     created = supervisor.create_run(
         task="use the selected backend",
@@ -715,7 +715,7 @@ def test_worker_command_forwards_selected_agent_and_model(monkeypatch, tmp_path:
     }
     assert len(commands) == 1
     command = commands[0]
-    assert command[:3] == [sys.executable, "-m", "lh_harness"]
+    assert command[:3] == [sys.executable, "-m", "src"]
     package_root = str(Path(supervisor_service.__file__).resolve().parents[2])
     assert launch_env["PYTHONPATH"].split(os.pathsep)[0] == package_root
     assert "relative-source" in launch_env["PYTHONPATH"].split(os.pathsep)[1:]
@@ -735,7 +735,7 @@ def test_worker_command_forwards_selected_agent_and_model(monkeypatch, tmp_path:
 
 def test_fresh_idempotency_key_cannot_adopt_preexisting_run(monkeypatch, tmp_path: Path) -> None:
     process = _Process()
-    monkeypatch.setattr("lh_harness.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
+    monkeypatch.setattr("src.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
     root = tmp_path / "runs"
     existing = root / "taken"
     existing.mkdir(parents=True)
@@ -761,7 +761,7 @@ def test_worker_does_not_inherit_web_control_token(monkeypatch, tmp_path: Path) 
         return process
 
     monkeypatch.setenv("LH_HARNESS_WEB_TOKEN", "control-secret")
-    monkeypatch.setattr("lh_harness.supervisor.service.subprocess.Popen", launch)
+    monkeypatch.setattr("src.supervisor.service.subprocess.Popen", launch)
     supervisor = RunSupervisor(tmp_path / "runs", workspace_root=tmp_path / "workspace")
     supervisor.create_run(task="do not leak the control token")
 
@@ -772,7 +772,7 @@ def test_worker_does_not_inherit_web_control_token(monkeypatch, tmp_path: Path) 
 
 def test_run_listing_skips_symlinked_run_dirs(monkeypatch, tmp_path: Path) -> None:
     process = _Process()
-    monkeypatch.setattr("lh_harness.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
+    monkeypatch.setattr("src.supervisor.service.subprocess.Popen", lambda *args, **kwargs: process)
     root = tmp_path / "runs"
     outside = tmp_path / "outside"
     (outside / "logs" / "role_management").mkdir(parents=True)
@@ -950,7 +950,7 @@ def test_approval_persistence_rejects_final_symlink(tmp_path: Path) -> None:
     outside.write_text("private\n", encoding="utf-8")
     (role / "approvals.jsonl").symlink_to(outside)
 
-    from lh_harness.dashboard.state import ApprovalOption, DashboardState
+    from src.dashboard.state import ApprovalOption, DashboardState
 
     state = DashboardState(run / "logs", runs_root=root, control_enabled=True)
     state.create_approval(

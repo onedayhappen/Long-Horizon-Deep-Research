@@ -5,11 +5,11 @@ from pathlib import Path
 import httpx
 import pytest
 
-from lh_harness.research.cli import main
-from lh_harness.research.config import load_config
-from lh_harness.research.jsonio import load
-from lh_harness.research.model_backend import ChatJsonRoleBackend, configured_backend, response_schema
-from lh_harness.research.replay import ReplayFetchProvider, ReplaySearchProvider
+from src.research.cli import main
+from src.research.config import load_config
+from src.research.jsonio import load
+from src.research.model_backend import ChatJsonRoleBackend, configured_backend, response_schema
+from src.research.replay import ReplayFetchProvider, ReplaySearchProvider
 from scripts.outline_iteration_fixture import ScenarioAgent, prepare
 from tests.research.test_model_backend import request
 
@@ -82,7 +82,7 @@ def test_bad_api_outputs_are_rejected(monkeypatch, finish_reason, content):
 
 
 def test_cli_routes_all_roles_to_api_and_records_provenance(monkeypatch, tmp_path):
-    from lh_harness.research import assisted
+    from src.research import assisted
     fixture = tmp_path / "fixture"
     prepare(fixture)
     agent = ScenarioAgent()

@@ -12,10 +12,10 @@ import pytest
 pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient
 
-import lh_harness.dashboard.state as dashboard_state
-from lh_harness.dashboard.state import DashboardState
-from lh_harness.webapi.events import EventTailer
-from lh_harness.webapi.server import _MAX_CONTROL_BODY_BYTES, create_app
+import src.dashboard.state as dashboard_state
+from src.dashboard.state import DashboardState
+from src.webapi.events import EventTailer
+from src.webapi.server import _MAX_CONTROL_BODY_BYTES, create_app
 
 
 def _run(tmp_path: Path) -> tuple[Path, DashboardState]:
@@ -158,7 +158,7 @@ def test_event_tail_rejects_foreign_run_identity_and_duplicate_cursors(tmp_path:
 
 
 def test_event_tail_is_byte_bounded_and_uses_stable_offset_ids(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    import lh_harness.webapi.events as events_module
+    import src.webapi.events as events_module
 
     monkeypatch.setattr(events_module, "_MAX_EVENT_LOG_BYTES", 180)
     path = tmp_path / "events.jsonl"
@@ -422,7 +422,7 @@ def test_trajectory_step_count_is_bounded_and_reports_latest_tail(
 ) -> None:
     """A dense but valid JSONL stream must not produce an unbounded UI payload."""
 
-    import lh_harness.dashboard.state as state_module
+    import src.dashboard.state as state_module
 
     monkeypatch.setattr(state_module, "_MAX_TRAJECTORY_STEPS", 3)
     root, state = _run(tmp_path)
@@ -464,7 +464,7 @@ def test_trajectory_step_count_is_bounded_and_reports_latest_tail(
 
 
 def test_small_trajectory_has_no_truncation_warning(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    import lh_harness.dashboard.state as state_module
+    import src.dashboard.state as state_module
 
     monkeypatch.setattr(state_module, "_MAX_TRAJECTORY_STEPS", 3)
     root, state = _run(tmp_path)
@@ -497,7 +497,7 @@ def test_small_trajectory_has_no_truncation_warning(tmp_path: Path, monkeypatch:
 
 
 def test_jsonl_state_reader_retains_bounded_complete_tail(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    import lh_harness.dashboard.state as state_module
+    import src.dashboard.state as state_module
 
     monkeypatch.setattr(state_module, "_MAX_JSONL_BYTES", 160)
     path = tmp_path / "records.jsonl"
@@ -521,7 +521,7 @@ def test_create_run_rejects_float_rounds(tmp_path: Path) -> None:
     # No supervisor is needed to validate the request shape; the endpoint must
     # reject malformed input before attempting a process launch.
     root, state = _run(tmp_path)
-    from lh_harness.supervisor.service import RunSupervisor
+    from src.supervisor.service import RunSupervisor
 
     supervisor = RunSupervisor(root, workspace_root=tmp_path / "workspace")
     client = TestClient(create_app(state=state, runs_root=root, supervisor=supervisor))
@@ -542,8 +542,8 @@ def test_control_revision_rejects_lossy_numeric_forms(tmp_path: Path) -> None:
 
 def test_create_run_enforces_round_ceiling(tmp_path: Path) -> None:
     root, state = _run(tmp_path)
-    from lh_harness.supervisor.service import RunSupervisor
-    from lh_harness.types import MAX_ROUNDS
+    from src.supervisor.service import RunSupervisor
+    from src.types import MAX_ROUNDS
 
     supervisor = RunSupervisor(root, workspace_root=tmp_path / "workspace")
     client = TestClient(create_app(state=state, runs_root=root, supervisor=supervisor))
@@ -604,7 +604,7 @@ def test_websocket_resync_gap_advances_to_retained_tail(tmp_path: Path) -> None:
 
 def test_attached_api_rejects_foreign_run_paths(tmp_path: Path) -> None:
     root, state = _run(tmp_path)
-    from lh_harness.supervisor.service import RunSupervisor
+    from src.supervisor.service import RunSupervisor
 
     other = root / "run-2" / "logs" / "role_management"
     other.mkdir(parents=True)

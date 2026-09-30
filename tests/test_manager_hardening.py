@@ -6,9 +6,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from lh_harness.dashboard.state import DashboardState
-from lh_harness.environment.local import LocalEnvironment
-from lh_harness.manager import (
+from src.dashboard.state import DashboardState
+from src.environment.local import LocalEnvironment
+from src.manager import (
     _GateContext,
     _human_gate,
     _merge_episode_logs,
@@ -16,8 +16,8 @@ from lh_harness.manager import (
     _write_terminal_failure,
     run,
 )
-from lh_harness.types import EpisodeBudget, EpisodeResult, HarnessConfig
-from lh_harness.utils.run_boundary import safe_run_logs, safe_run_role
+from src.types import EpisodeBudget, EpisodeResult, HarnessConfig
+from src.utils.run_boundary import safe_run_logs, safe_run_role
 
 
 def test_terminal_failure_does_not_follow_role_directory_symlink(tmp_path: Path) -> None:

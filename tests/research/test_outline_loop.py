@@ -5,13 +5,13 @@ from pathlib import Path
 
 import pytest
 
-from lh_harness.research.cli import main
-from lh_harness.research.controller import Controller
-from lh_harness.research.jsonio import load
-from lh_harness.research.loop import ResearchStopped
-from lh_harness.research.models import InitializationProposal, OutlinePatchAction, ResearchContract
-from lh_harness.research.outline import apply_patch, initialize_outline, InvalidOutline
-from lh_harness.research.storage import Store
+from src.research.cli import main
+from src.research.controller import Controller
+from src.research.jsonio import load
+from src.research.loop import ResearchStopped
+from src.research.models import InitializationProposal, OutlinePatchAction, ResearchContract
+from src.research.outline import apply_patch, initialize_outline, InvalidOutline
+from src.research.storage import Store
 from scripts.outline_iteration_fixture import prepare, ScenarioAgent, SEED, search_action
 
 FIXTURE=Path(__file__).parents[1]/'fixtures/research/outline_iteration'
@@ -311,7 +311,7 @@ def test_elapsed_budget_is_persisted_and_checked_on_resume(tmp_path):
 
 
 def test_search_action_has_its_own_call_limit(tmp_path):
-    from lh_harness.research.budget import BudgetDenied
+    from src.research.budget import BudgetDenied
     def plans(step,p):
         result=search_action(1);result['max_external_calls']=2;return result
     c,s,a=make_controller(tmp_path,plans)

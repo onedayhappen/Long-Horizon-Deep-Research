@@ -10,8 +10,8 @@ from pathlib import Path
 
 import pytest
 
-import lh_harness.cli as cli
-from lh_harness.cli import (
+import src.cli as cli
+from src.cli import (
     _adopt_supervised_run_dir,
     _claim_supervised_owner,
     _read_supervised_task,
@@ -153,7 +153,7 @@ def test_generated_run_id_is_reserved_atomically(tmp_path: Path) -> None:
 
 
 def test_embedded_control_watcher_cancels_manager_task(tmp_path: Path) -> None:
-    from lh_harness.supervisor.control_bus import ControlBus
+    from src.supervisor.control_bus import ControlBus
 
     run_dir = tmp_path / "run"
     bus = ControlBus(run_dir)
@@ -175,7 +175,7 @@ def test_embedded_control_watcher_survives_isolated_ebadf(
     """One stolen-descriptor EBADF costs one poll; the next poll still cancels."""
     import errno
 
-    from lh_harness.supervisor.control_bus import ControlBus
+    from src.supervisor.control_bus import ControlBus
 
     run_dir = tmp_path / "run"
     bus = ControlBus(run_dir)
@@ -212,7 +212,7 @@ def test_embedded_control_watcher_propagates_non_ebadf_errors(
     """Permission or I/O failures must surface, not blind the watcher."""
     import errno
 
-    from lh_harness.supervisor.control_bus import ControlBus
+    from src.supervisor.control_bus import ControlBus
 
     run_dir = tmp_path / "run"
     ControlBus(run_dir)
@@ -235,7 +235,7 @@ def test_embedded_control_watcher_propagates_non_ebadf_errors(
 
 @pytest.mark.parametrize("requested_action", ["stop", "abort"])
 def test_dashboard_control_stop_keeps_embedded_server_alive(tmp_path: Path, requested_action: str) -> None:
-    from lh_harness.supervisor.control_bus import ControlBus
+    from src.supervisor.control_bus import ControlBus
 
     run_dir = tmp_path / "run"
     ControlBus(run_dir).write_status({"status": "stopping", "requested_action": requested_action})
@@ -326,7 +326,7 @@ def test_supervised_worker_claims_pre_popen_reservation(monkeypatch, tmp_path: P
     (run_dir / "control" / "status.json").write_text(
         json.dumps({"run_id": "reserved", "status": "creating"}), encoding="utf-8"
     )
-    monkeypatch.setattr("lh_harness.cli.os.getppid", lambda: 777)
+    monkeypatch.setattr("src.cli.os.getppid", lambda: 777)
 
     assert _adopt_supervised_run_dir(
         root,

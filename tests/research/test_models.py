@@ -5,9 +5,9 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from lh_harness.research.config import load_config
-from lh_harness.research.jsonio import load, loads
-from lh_harness.research.models import ResearchContract, RoleRequest
+from src.research.config import load_config
+from src.research.jsonio import load, loads
+from src.research.models import ResearchContract, RoleRequest
 
 
 ROOT = Path(__file__).parents[1] / "fixtures" / "research" / "success"

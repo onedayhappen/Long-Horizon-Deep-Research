@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from lh_harness.environment.local import LocalEnvironment, _open_trajectory_file
+from src.environment.local import LocalEnvironment, _open_trajectory_file
 
 
 def test_trajectory_writer_rejects_symlinked_parent(tmp_path: Path) -> None:
@@ -87,8 +87,8 @@ def test_embedded_agent_does_not_inherit_web_control_token(monkeypatch) -> None:
 
     monkeypatch.setenv("LH_HARNESS_WEB_TOKEN", "control-secret")
     monkeypatch.setattr(asyncio, "create_subprocess_shell", launch)
-    monkeypatch.setattr("lh_harness.environment.local.track_process_group", lambda _pid: None)
-    monkeypatch.setattr("lh_harness.environment.local.untrack_process_group", lambda _pid: None)
+    monkeypatch.setattr("src.environment.local.track_process_group", lambda _pid: None)
+    monkeypatch.setattr("src.environment.local.untrack_process_group", lambda _pid: None)
 
     result = asyncio.run(LocalEnvironment().exec("agent-command"))
 

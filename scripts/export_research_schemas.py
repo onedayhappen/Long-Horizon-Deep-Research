@@ -2,8 +2,8 @@
 import json
 from pathlib import Path
 
-from lh_harness.research.config import ResearchConfig
-from lh_harness.research.models import (
+from src.research.config import ResearchConfig
+from src.research.models import (
     ResearchContract, QuerySpec, SearchBatch, FetchRequest, FetchResult,
     ParsedDocument, RoleRequest, RoleResponse, CoverageAssessment, StopDecision,
     SearchAction, OutlinePatchAction, TerminateProposal, InitializationProposal,
@@ -20,7 +20,7 @@ MODELS = (ResearchConfig, ResearchContract, QuerySpec, SearchBatch, FetchRequest
           QuestionSpaceAudit, SearchBiasVerdict, CandidateEvidenceBundle,
           EvidenceAuditVerdict, CounterAuditVerdict, CoverageProposal, DraftSection,
           ReportAudit, BudgetSnapshot, OutlineOperation, OutlineNode, OutlineState)
-TARGET = Path(__file__).resolve().parents[1] / "src/lh_harness/research/schemas/v1"
+TARGET = Path(__file__).resolve().parents[1] / "src/research/schemas/v1"
 
 
 def main() -> None:

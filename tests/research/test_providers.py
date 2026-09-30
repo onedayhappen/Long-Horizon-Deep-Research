@@ -5,9 +5,9 @@ import gzip
 import httpx
 import pytest
 
-from lh_harness.research.extract import locate, parse_document, verify_locator
-from lh_harness.research.models import FetchRequest, QuerySpec
-from lh_harness.research.providers import EgressFetchProvider, ProviderError, SerperSearchProvider, validate_public_url
+from src.research.extract import locate, parse_document, verify_locator
+from src.research.models import FetchRequest, QuerySpec
+from src.research.providers import EgressFetchProvider, ProviderError, SerperSearchProvider, validate_public_url
 
 
 def query():

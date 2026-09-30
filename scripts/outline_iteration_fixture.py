@@ -8,10 +8,10 @@ import json
 import tempfile
 from pathlib import Path
 
-from lh_harness.research.controller import Controller
-from lh_harness.research.jsonio import canonical, digest, load
-from lh_harness.research.models import RoleResponse, ResearchContract
-from lh_harness.research.storage import Store
+from src.research.controller import Controller
+from src.research.jsonio import canonical, digest, load
+from src.research.models import RoleResponse, ResearchContract
+from src.research.storage import Store
 
 SEED = '8135a02a-fc08-4e48-9339-89b5c141e159'
 TEXTS = ['虚构产品 A 官方声明支持导出 CSV 文件。', '虚构产品 A 的 CSV 导出仅适用于最多 100 行的数据。']

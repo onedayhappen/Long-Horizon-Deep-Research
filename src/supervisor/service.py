@@ -12,6 +12,7 @@ import errno
 import hashlib
 import json
 import os
+import re
 import shlex
 import signal
 import stat
@@ -848,7 +849,7 @@ class RunSupervisor:
             return False
         if not current:
             return False
-        if "lh-harness" not in current and "lh_harness" not in current:
+        if "lh-harness" not in current and "lh_harness" not in current and not re.search(r"(?:^|\s)-m\s+[\"']?src[\"']?(?:\s|$)", current):
             return False
         # Require the durable run boundary to be visible in argv as well. A
         # same-named executable alone is not enough protection from PID reuse.
@@ -1313,7 +1314,7 @@ class RunSupervisor:
         # process may not understand the private ``--supervised`` protocol.
         # The module form also keeps an installed wheel and its dependencies
         # in the same environment as the API process.
-        command = [sys.executable, "-m", "lh_harness"]
+        command = [sys.executable, "-m", "src"]
         command.extend([
             "run",
             # Values originate at the HTTP boundary.  The equals spelling

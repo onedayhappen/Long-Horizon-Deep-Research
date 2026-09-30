@@ -3,14 +3,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from lh_harness.model_catalog import (
+from src.model_catalog import (
     _discover_codex_models,
     _discover_deepseek_models,
     _normalise_codex_entries,
     discover_model_catalog,
 )
-from lh_harness.provider_errors import classify_agent_runtime_failure
-from lh_harness.types import EpisodeResult
+from src.provider_errors import classify_agent_runtime_failure
+from src.types import EpisodeResult
 
 
 def test_codex_catalog_uses_visible_account_cache(monkeypatch, tmp_path: Path) -> None:
@@ -28,7 +28,7 @@ def test_codex_catalog_uses_visible_account_cache(monkeypatch, tmp_path: Path) -
         ),
         encoding="utf-8",
     )
-    monkeypatch.setattr("lh_harness.model_catalog._codex_cache_path", lambda: cache)
+    monkeypatch.setattr("src.model_catalog._codex_cache_path", lambda: cache)
 
     models, discovery = _discover_codex_models(None, allow_probe=False)
 

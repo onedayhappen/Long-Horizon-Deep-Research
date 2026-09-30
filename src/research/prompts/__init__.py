@@ -7,5 +7,5 @@ from importlib.resources import files
 
 
 def template(role: str) -> str:
-    data = json.loads(files("lh_harness.research").joinpath("prompts/v1/roles.json").read_text("utf-8"))
+    data = json.loads(files("src.research").joinpath("prompts/v1/roles.json").read_text("utf-8"))
     return data[role]

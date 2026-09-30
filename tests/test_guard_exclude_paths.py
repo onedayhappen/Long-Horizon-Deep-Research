@@ -11,9 +11,9 @@ from pathlib import Path
 
 import pytest
 
-import lh_harness.cli as cli
-from lh_harness.cli import _apply_repeatable_defaults, _resolve_guard_exclude_paths
-from lh_harness.config import ProjectConfigError, _flatten_run_table
+import src.cli as cli
+from src.cli import _apply_repeatable_defaults, _resolve_guard_exclude_paths
+from src.config import ProjectConfigError, _flatten_run_table
 
 
 def _workspace(tmp_path: Path) -> Path:

@@ -6,13 +6,13 @@ from pathlib import Path
 
 import pytest
 
-from lh_harness.adapters.claude_code import ClaudeCodeAdapter
-from lh_harness.adapters.codex import CodexAdapter
-from lh_harness.adapters.deepseek_harness import DeepSeekHarnessAdapter
-from lh_harness.adapters.opencode import OpenCodeAdapter
-from lh_harness.cli import _resolve_role_reasoning_effort
-from lh_harness.config import ProjectConfigError, load_run_defaults
-from lh_harness.supervisor.service import _normalise_role_configs
+from src.adapters.claude_code import ClaudeCodeAdapter
+from src.adapters.codex import CodexAdapter
+from src.adapters.deepseek_harness import DeepSeekHarnessAdapter
+from src.adapters.opencode import OpenCodeAdapter
+from src.cli import _resolve_role_reasoning_effort
+from src.config import ProjectConfigError, load_run_defaults
+from src.supervisor.service import _normalise_role_configs
 
 
 def _codex(**kwargs) -> CodexAdapter:
@@ -182,7 +182,7 @@ def test_supervisor_rejects_a_malformed_role_effort() -> None:
 
 
 def test_worker_command_forwards_the_role_effort(tmp_path: Path) -> None:
-    from lh_harness.supervisor.service import RunSupervisor
+    from src.supervisor.service import RunSupervisor
 
     supervisor = RunSupervisor(tmp_path / "runs", workspace_root=tmp_path)
     command = supervisor._worker_command(
@@ -205,7 +205,7 @@ def test_worker_command_forwards_the_role_effort(tmp_path: Path) -> None:
 
 
 def test_worker_command_forwards_a_global_effort_without_role_configs(tmp_path: Path) -> None:
-    from lh_harness.supervisor.service import RunSupervisor
+    from src.supervisor.service import RunSupervisor
 
     supervisor = RunSupervisor(tmp_path / "runs", workspace_root=tmp_path)
     command = supervisor._worker_command(

@@ -7,17 +7,17 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from lh_harness import agent_logs
-from lh_harness.adapters import deepseek_harness as deepseek_adapter_module
-from lh_harness.adapters.deepseek_harness import (
+from src import agent_logs
+from src.adapters import deepseek_harness as deepseek_adapter_module
+from src.adapters.deepseek_harness import (
     DeepSeekHarnessAdapter,
     permission_mode_for_role,
 )
-from lh_harness.adapters.deepseek_runner import run
-from lh_harness.environment.local import LocalEnvironment
-from lh_harness.types import EpisodeBudget
-from lh_harness.utils.agent_cli import resolve_dsh_binary
-from lh_harness.webapi import server as web_server
+from src.adapters.deepseek_runner import run
+from src.environment.local import LocalEnvironment
+from src.types import EpisodeBudget
+from src.utils.agent_cli import resolve_dsh_binary
+from src.webapi import server as web_server
 
 
 def _executable(path: Path, body: str) -> str:
@@ -58,7 +58,7 @@ def test_deepseek_adapter_quotes_binary_and_configures_isolated_home(
 
     tokens = shlex.split(adapter.command_template.replace("{prompt_path}", "/tmp/prompt.md"))
     assert tokens[:2] == ["DSH_HOME=/tmp/run with spaces/dsh-home", "DSH_PERMISSION_MODE=read-only"]
-    assert "lh_harness.adapters.deepseek_runner" in tokens
+    assert "src.adapters.deepseek_runner" in tokens
     assert tokens[tokens.index("--binary") + 1] == binary
     assert adapter.permission_mode == "read-only"
 

@@ -7,15 +7,15 @@ import pytest
 pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient
 
-from lh_harness.adapters import codex as codex_adapter_module
-from lh_harness.adapters.codex import CodexAdapter
-from lh_harness.utils import agent_cli
-from lh_harness.utils.agent_cli import (
+from src.adapters import codex as codex_adapter_module
+from src.adapters.codex import CodexAdapter
+from src.utils import agent_cli
+from src.utils.agent_cli import (
     is_agent_binary_available,
     resolve_agent_binary,
     resolve_codex_binary,
 )
-from lh_harness.webapi import server as web_server
+from src.webapi import server as web_server
 
 
 def _executable(path: Path) -> str:

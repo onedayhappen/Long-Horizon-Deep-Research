@@ -8,10 +8,10 @@ import json
 import tempfile
 from pathlib import Path
 
-from lh_harness.research.controller import Controller
-from lh_harness.research.jsonio import canonical, load, digest
-from lh_harness.research.models import ResearchContract, RoleResponse
-from lh_harness.research.storage import Store
+from src.research.controller import Controller
+from src.research.jsonio import canonical, load, digest
+from src.research.models import ResearchContract, RoleResponse
+from src.research.storage import Store
 
 
 def reindex(root):
@@ -57,7 +57,7 @@ def reindex(root):
             (root/path).write_bytes(canonical(value))
             return RoleResponse.model_validate(value)
 
-    from lh_harness.research.budget import BudgetDenied
+    from src.research.budget import BudgetDenied
     for calls, fail_once in [(120,False),(120,True),(10,False)]:
         with tempfile.TemporaryDirectory() as directory:
             store = Store(Path(directory), namespace_seed=manifest['namespace_seed'])

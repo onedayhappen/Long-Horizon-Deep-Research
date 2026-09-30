@@ -12,9 +12,9 @@ import pytest
 pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient
 
-from lh_harness.supervisor.service import RunSupervisor
-from lh_harness.types import MAX_ROUNDS
-from lh_harness.webapi.server import create_app
+from src.supervisor.service import RunSupervisor
+from src.types import MAX_ROUNDS
+from src.webapi.server import create_app
 
 
 class FakeProcess:
@@ -28,8 +28,8 @@ class FakeProcess:
 @pytest.fixture()
 def client(monkeypatch, tmp_path: Path):
     process = FakeProcess()
-    monkeypatch.setattr("lh_harness.supervisor.service.subprocess.Popen", lambda *a, **k: process)
-    monkeypatch.setattr("lh_harness.supervisor.service.os.killpg", lambda *a, **k: None)
+    monkeypatch.setattr("src.supervisor.service.subprocess.Popen", lambda *a, **k: process)
+    monkeypatch.setattr("src.supervisor.service.os.killpg", lambda *a, **k: None)
     root = tmp_path / "runs"
     workspace = tmp_path / "workspace"
     workspace.mkdir()

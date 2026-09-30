@@ -4,7 +4,7 @@ import json
 import uuid
 from pathlib import Path
 
-from lh_harness.research.jsonio import canonical, digest
+from src.research.jsonio import canonical, digest
 
 
 ROOT = Path(__file__).parent

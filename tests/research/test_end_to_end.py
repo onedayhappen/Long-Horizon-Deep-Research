@@ -2,8 +2,8 @@ import json
 import shutil
 from pathlib import Path
 
-from lh_harness.research.cli import main
-from lh_harness.research.storage import Store
+from src.research.cli import main
+from src.research.storage import Store
 
 
 FIXTURE = Path(__file__).parents[1] / "fixtures/research/success"

@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from lh_harness.research.jsonio import load
-from lh_harness.research.models import CoverageAssessment, ResearchContract
-from lh_harness.research.policy import (
+from src.research.jsonio import load
+from src.research.models import CoverageAssessment, ResearchContract
+from src.research.policy import (
     AuditedLink, ObservationRoot, QueryOutcome, RootRelation, challenge_satisfied,
     claim_epistemic, coverage_gates, independent_count,
 )

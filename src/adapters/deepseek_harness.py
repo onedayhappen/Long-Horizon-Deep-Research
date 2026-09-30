@@ -80,7 +80,7 @@ class DeepSeekHarnessAdapter(CommandAgentAdapter):
             *environment,
             shlex.quote(sys.executable),
             "-m",
-            "lh_harness.adapters.deepseek_runner",
+            "src.adapters.deepseek_runner",
             "--binary",
             shlex.quote(dsh_binary),
             "--prompt",

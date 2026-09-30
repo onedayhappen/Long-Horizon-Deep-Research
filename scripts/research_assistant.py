@@ -4,7 +4,7 @@ import json
 import os
 from pathlib import Path
 
-from lh_harness.research.jsonio import canonical, load
+from src.research.jsonio import canonical, load
 
 
 def pending(run_dir):

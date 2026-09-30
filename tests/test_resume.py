@@ -11,18 +11,18 @@ from typing import Any
 
 import pytest
 
-import lh_harness.cli as cli
-from lh_harness.dashboard.gate import make_human_hook
-from lh_harness.dashboard.state import DashboardState, _normalise_extra_rounds
-from lh_harness.manager import _extra_rounds, _managed_round_from_dict, _recorded_rounds
-from lh_harness.supervisor.lifecycle import ACTIVE_STATUSES, resume_epoch
-from lh_harness.supervisor.service import (
+import src.cli as cli
+from src.dashboard.gate import make_human_hook
+from src.dashboard.state import DashboardState, _normalise_extra_rounds
+from src.manager import _extra_rounds, _managed_round_from_dict, _recorded_rounds
+from src.supervisor.lifecycle import ACTIVE_STATUSES, resume_epoch
+from src.supervisor.service import (
     RunSupervisor,
     _lifecycle_command_id,
     _merge_lifecycle_status,
     _resume_round_budget,
 )
-from lh_harness.types import MAX_ROUNDS, ManagedRound
+from src.types import MAX_ROUNDS, ManagedRound
 
 
 class FakeProcess:
@@ -255,10 +255,10 @@ def _terminal_run(supervisor: RunSupervisor, run_dir: Path, run_id: str, **owner
 @pytest.fixture()
 def supervisor(monkeypatch, tmp_path: Path) -> RunSupervisor:
     monkeypatch.setattr(
-        "lh_harness.supervisor.service.subprocess.Popen",
+        "src.supervisor.service.subprocess.Popen",
         lambda *args, **kwargs: FakeProcess(),
     )
-    monkeypatch.setattr("lh_harness.supervisor.service.os.killpg", lambda *args, **kwargs: None)
+    monkeypatch.setattr("src.supervisor.service.os.killpg", lambda *args, **kwargs: None)
     workspace = tmp_path / "workspace"
     workspace.mkdir()
     return RunSupervisor(tmp_path / "runs", workspace_root=workspace)

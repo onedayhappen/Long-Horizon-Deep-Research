@@ -31,20 +31,20 @@ research = ["pydantic>=2.10,<3", "httpx>=0.27,<1", "beautifulsoup4>=4.12,<5", "p
 research-zh = ["jieba>=0.42,<1"]
 
 [project.scripts]
-lh-harness = "lh_harness.cli:main"
+lh-harness = "src.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/lh_harness"]
+packages = ["src"]
 # The Web bundle is a build artifact, not source: it is git-ignored and CI
 # builds it before packaging.  ``artifacts`` (unlike ``force-include``) skips a
 # missing path silently, so a checkout without a Node toolchain still installs.
 artifacts = [
-    "/src/lh_harness/_frontend/web/dist/**",
+    "/src/_frontend/web/dist/**",
 ]
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "/src/lh_harness",
+    "/src",
     "/pyproject.toml",
     "/README.md",
     "/README.zh-CN.md",
@@ -52,7 +52,7 @@ include = [
 ]
 # Ship the built assets so `pip install <sdist>` yields a wheel with the Web UI.
 artifacts = [
-    "/src/lh_harness/_frontend/web/dist/**",
+    "/src/_frontend/web/dist/**",
 ]
 
 [tool.pytest.ini_options]
