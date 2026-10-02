@@ -1,6 +1,8 @@
 """Deterministic, transactional-input validation for evidence-driven outlines."""
 from .models import InitializationProposal, OutlineNode, OutlineState, OutlinePatchAction, ResearchContract
 
+MAX_OUTLINE_DEPTH = 3
+
 
 class InvalidOutline(ValueError):
     pass
@@ -27,6 +29,31 @@ def validate_outline(outline: OutlineState, contract: ResearchContract) -> None:
                 raise InvalidOutline('outline cycle or inactive/missing parent')
             seen.add(parent)
             parent = active[parent].parent_id
+        if len(seen) > MAX_OUTLINE_DEPTH:
+            raise InvalidOutline('outline exceeds three section levels')
+
+
+def section_context(outline: OutlineState, node: OutlineNode) -> dict:
+    """Structural context, never an additional source of factual material."""
+    active = {n.id: n for n in outline.nodes if n.active}
+    ancestors = []
+    parent = node.parent_id
+    while parent is not None:
+        ancestor = active[parent]
+        ancestors.append(ancestor)
+        parent = ancestor.parent_id
+    ancestors.reverse()
+    children = [n for n in active.values() if n.parent_id == node.id]
+    def summary(n):
+        return dict(id=n.id, title=n.title, requirement_ids=n.requirement_ids,
+                    claim_ids=n.claim_ids, evidence_ids=n.evidence_ids)
+    return dict(level=len(ancestors)+1, max_depth=MAX_OUTLINE_DEPTH,
+                path=[n.title for n in ancestors] + [node.title],
+                ancestors=[summary(n) for n in ancestors],
+                children=[summary(n) for n in children],
+                siblings=[summary(n) for n in active.values()
+                          if n.parent_id == node.parent_id and n.id != node.id],
+                writing_role='overview' if children else 'detail')
 
 
 def initialize_outline(proposal: InitializationProposal, contract: ResearchContract) -> OutlineState:
@@ -103,6 +130,11 @@ def apply_patch(outline: OutlineState, patch: OutlinePatchAction, contract: Rese
             if not op.title or op.title == n.title:
                 raise InvalidOutline('narrow_claim needs a narrower title')
             n.title = op.title
+            n.claim_ids = op.claim_ids
+            n.evidence_ids = op.evidence_ids
+        elif op.kind == 'bind_evidence':
+            if not op.claim_ids and not op.evidence_ids:
+                raise InvalidOutline('bind_evidence needs claim or evidence bindings')
             n.claim_ids = op.claim_ids
             n.evidence_ids = op.evidence_ids
         elif op.kind == 'mark_gap':

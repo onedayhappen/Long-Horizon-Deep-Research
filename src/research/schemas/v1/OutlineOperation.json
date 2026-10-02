@@ -99,6 +99,7 @@
         "merge",
         "move",
         "narrow_claim",
+        "bind_evidence",
         "add_counterview",
         "mark_gap",
         "retire_node"
