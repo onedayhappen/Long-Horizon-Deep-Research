@@ -258,6 +258,7 @@ class VisualRuntimeMixin:
             receipt = self.commit('candidate:' + evidence_id, {'evidence': evidence, 'claim': claim},
                                   [('evidence', evidence_id, evidence), ('claim', claim_id, claim)])
             refs = {r['kind']: r for r in receipt['refs']}
+            self.bind_candidate_evidence(refs['claim'], refs['evidence'])
             self.visual_dependency([figure_ref], refs['evidence']['version_id'], 'visual_evidence')
             verdict, images_hash = await self.audit_visual(evidence, claim, figure_key)
             audit_ref = self.commit('visual-audit:' + figure_key, verdict, [('audit', evidence_id, verdict)])['refs'][0]
@@ -268,7 +269,27 @@ class VisualRuntimeMixin:
                     EntityRef.model_validate(refs['evidence']), EntityRef.model_validate(audit_ref), 'supports', self.owner, self.generation)
             if verdict['conflict']:
                 conflict = {'claim_version_ids': [refs['claim']['version_id']], 'evidence_version_ids': [refs['evidence']['version_id']],
-                            'severity': 'blocking', 'reason': 'visual_text_conflict'}
+                            'requirement_ids': requirements, 'severity': 'blocking', 'reason': 'visual_text_conflict'}
+                # Save the actual caption/body side as a distinct exact span.
+                # It stays a candidate: locating text is not a support audit.
+                from .extract import locate
+                source_text = self.store.read_blob(snapshot['payload']['text_hash']).decode('utf-8')
+                related = set(artifact.caption_refs + artifact.mention_refs)
+                spans = [locate(source_text, b['text']) for b in context
+                         if b['id'] in related and b['text'] in source_text]
+                if spans:
+                    excerpt = source_text[min(s.start for s in spans):max(s.end for s in spans)]
+                    text_evidence = dict(snapshot_id=hit.hit_id, snapshot_version_id=snapshot['version_id'],
+                        excerpt=excerpt, locator=locate(source_text, excerpt).model_dump(),
+                        source_class=proposal.source_class, observation_root=document.raw_hash, validity='active')
+                    text_claim = dict(text='The document context states: ' + excerpt, kind='attributed',
+                                      requirement_ids=requirements, validity='current')
+                    text_refs = self.commit('candidate:' + evidence_id + ':text', text_evidence,
+                        [('evidence', evidence_id + ':text', text_evidence), ('claim', claim_id + ':text', text_claim)])['refs']
+                    text_refs = {r['kind']: r for r in text_refs}
+                    self.bind_candidate_evidence(text_refs['claim'], text_refs['evidence'])
+                    conflict['claim_version_ids'].append(text_refs['claim']['version_id'])
+                    conflict['evidence_version_ids'].append(text_refs['evidence']['version_id'])
                 self.commit('visual-conflict:' + figure_key, conflict, [('conflict', figure_key, conflict)])
             self.visual_gap(figure_key, requirements, 'visual_audit' if not accepted else 'audited', 'resolved' if accepted else 'open')
 

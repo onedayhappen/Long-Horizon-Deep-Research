@@ -16,7 +16,7 @@ from .jsonio import canonical, digest, loads
 from .models import (
     BoundedUnknownFact, CandidateEvidenceBundle, CounterAuditVerdict,
     CoverageAssessment, CoverageProposal, DraftSection, EvidenceAuditVerdict,
-    FetchRequest, FactualFact, QuestionSpaceAudit,
+    FetchRequest, FactualFact, DisputeFact, QuestionSpaceAudit,
     QuerySpec, ReportAudit, ResearchContract, RoleRequest, SearchBatch, FetchResult,
     SearchAction, SearchBiasVerdict, StopDecision, GateResult, OutlineState,
 )
@@ -29,6 +29,7 @@ from .loop import ResearchLoopMixin, ResearchStopped, ResearchReopened
 from .reuse_runtime import ReuseRuntimeMixin
 from .storage import now
 from .visual_runtime import VisualRuntimeMixin
+from .conflict_runtime import ConflictRuntimeMixin
 
 
 class IncompleteResearch(RuntimeError):
@@ -38,7 +39,7 @@ class IncompleteResearch(RuntimeError):
 T = TypeVar("T")
 
 
-class Controller(VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
+class Controller(ConflictRuntimeMixin, VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
     def __init__(self, store: Store, contract: ResearchContract, fixture_dir: Path | None, max_calls: int, pools: list[int], *, external_providers: tuple | None = None, max_rounds: int = 20, max_duration_seconds: int = 3600, max_no_progress_actions: int = 3, saturation_effective_rounds: int = 3, max_revision_cycles: int = 2, max_output_tokens: int = 4096, api_model_name: str | None = None, research_config=None):
         self.max_output_tokens = max_output_tokens
         self.api_model_name = api_model_name
@@ -89,6 +90,8 @@ class Controller(VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
         version = self.store.run()["state_version"]
         unresolved = [r['id'] for r in self.heads('coverage') if r['payload']['disposition'] not in {'satisfied','bounded_unknown'}]
         unresolved += [r['id'] for r in self.open_report_gaps()]
+        unresolved += [r['id'] for r in self.current_conflicts() if r['payload'].get('status') != 'resolved']
+        unresolved += ['conflict-comparison:' + key for key in self.conflict_scan_state()['pending_ids']]
         current_outline = self.head('outline', 'outline')
         if current_outline:
             unresolved += self.blocking_gaps(OutlineState.model_validate(current_outline['payload']))
@@ -261,6 +264,7 @@ class Controller(VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
                 claim = {"text": candidate.claim_text, "kind": candidate.claim_kind, "requirement_ids": candidate.requirement_ids, "validity": "current"}
                 receipt = self.commit(f"candidate:{evidence_id}", {"claim": claim, "evidence": evidence}, [("evidence", evidence_id, evidence), ("claim", candidate.claim_id, claim)])
                 refs = {item["kind"]: item for item in receipt["refs"]}
+                self.bind_candidate_evidence(refs['claim'], refs['evidence'])
                 audit_packet = {"claim_version_id": refs["claim"]["version_id"], "evidence_id": evidence_id, "excerpt_hash": locator.quote_hash, "source_class": candidate.source_class, "url": hit.url}
                 audit_packet.update(claim_text=candidate.claim_text, excerpt=candidate.excerpt,
                     source_context=text[max(0, locator.start-1500):locator.end+1500])
@@ -303,6 +307,7 @@ class Controller(VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
 
 
     async def assess(self, outline: OutlineState, question_audit: QuestionSpaceAudit):
+        await self.review_conflicts()
         contract = self.contract
         evidence_by_requirement = self.evidence_rows()
         queries = [QuerySpec.model_validate(row['payload']) for row in self.heads('query')]
@@ -313,7 +318,9 @@ class Controller(VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
         bias = await self.role("auditor.search_bias", f"search-bias:{token}", {"question_ids": outline.question_ids, "query_ids": [q.query_id for q in queries], "research_digest_json": canonical(self.research_digest()).decode()}, SearchBiasVerdict)
         if not set(bias.query_families_seen) <= {q.strategy_family for q, outcome in zip(queries, outcomes) if outcome.status in {"hit", "empty"}}:
             raise RuntimeError("search bias audit invents a query family")
-        if not set(bias.source_classes_seen) <= {str(row["source_class"]) for rows in evidence_by_requirement.values() for row in rows}:
+        # Seen sources include contested/rejected material; their presence is
+        # not authorization to count them as support for a factual conclusion.
+        if not set(bias.source_classes_seen) <= {str(row['payload']['source_class']) for row in self.heads('evidence')}:
             raise RuntimeError("search bias audit invents a source class")
         self.commit(f"search-bias-audit:{token}", bias.model_dump(mode="json"), [("audit", "search-bias", bias.model_dump(mode="json"))])
         assessments = []
@@ -334,6 +341,9 @@ class Controller(VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
                 elif check.code == "challenge_attempted":
                     if challenge_satisfied([o for q, o in zip(queries, outcomes) if q.question_id == requirement.id], set(check.params.families), check.params.min_successful_queries):
                         passed.add(check.check_id)
+                elif check.code == 'conflict_disposition':
+                    if self.conflict_requirement_ready(requirement, unknown=requirement.allow_unknown):
+                        passed.add(check.check_id)
                 elif check.code == 'freshness':
                     from .models import utc
                     for evidence_row in rows:
@@ -349,6 +359,8 @@ class Controller(VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
             if visual_gaps:
                 # Unread figures must not be hidden by other text evidence.
                 passed -= {c.check_id for c in requirement.acceptance_checks if c.code == 'has_current_support'}
+            if not self.conflict_requirement_ready(requirement):
+                passed -= {c.check_id for c in requirement.acceptance_checks if c.code == 'has_current_support'}
             proposal = await self.role("auditor.coverage", f"coverage:{requirement.id}:{token}", {"requirement_id": requirement.id, "passed_check_ids": sorted(passed), "missing_check_ids": sorted(research_checks - passed), "research_digest_json": canonical(self.research_digest()).decode()}, CoverageProposal)
             if proposal.requirement_id != requirement.id or set(proposal.passed_check_ids) != passed or set(proposal.missing_check_ids) != research_checks - passed:
                 raise RuntimeError("coverage proposal contradicts deterministic checks")
@@ -359,6 +371,8 @@ class Controller(VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
                 raise RuntimeError("unsupported coverage claim")
             if proposal.disposition == 'satisfied' and visual_gaps:
                 raise RuntimeError('unresolved visual reading obligation')
+            if proposal.disposition in {'satisfied', 'bounded_unknown'} and not self.conflict_requirement_ready(requirement, unknown=proposal.disposition == 'bounded_unknown'):
+                raise RuntimeError('unresolved or unchecked evidence conflict')
             if proposal.disposition == "satisfied":
                 for check in requirement.acceptance_checks:
                     if check.code == 'has_current_support' and len(set(proposal.claim_version_ids)) < check.params.min_claims:
@@ -383,6 +397,8 @@ class Controller(VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
                 self.commit(f'resolve-gap:{gap_id}:{requirement.id}:{token}',resolved,[('report_gap',gap_id,resolved)])
             assessment = CoverageAssessment(requirement_id=requirement.id, stage="research", contract_version=contract.version, input_manifest_hash=digest({"requirement": requirement.id, "passed": sorted(passed), "research": token}), disposition=proposal.disposition, passed_check_ids=sorted(passed), missing_check_ids=sorted(research_checks - passed), claim_version_ids=proposal.claim_version_ids, audit_id=f"coverage:{requirement.id}:{token}")
             receipt = self.commit(f"coverage:{requirement.id}:{token}", assessment.model_dump(mode="json"), [("coverage", requirement.id, assessment.model_dump(mode="json"))])
+            conflict_state = self.conflict_freeze()
+            self.conflict_dependency(conflict_state['case_refs'] + conflict_state['scan']['comparison_refs'], receipt['refs'][0]['version_id'])
             assessment_refs[requirement.id] = receipt["refs"][0]["version_id"]
             assessments.append(assessment)
 
@@ -392,7 +408,13 @@ class Controller(VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
     async def write_report(self, outline: OutlineState, assessments, assessment_refs) -> str:
         from .writing import writer_packet, writing_brief, depth_status
         contract = self.contract
-        freeze = self.head('freeze','outline')['payload']
+        frozen = self.head('freeze', 'outline')
+        if frozen is None:
+            raise ResearchReopened('report freeze was invalidated')
+        freeze = frozen['payload']
+        self.require_conflict_ready(assessments)
+        if freeze.get('conflicts') != self.conflict_freeze():
+            raise ResearchReopened('conflict evidence changed after report freeze')
         if freeze['outline_version'] != outline.outline_version or set(freeze['coverage_refs']) != set(assessment_refs.values()):
             raise RuntimeError('writing input does not match frozen research versions')
         evidence_by_requirement = self.evidence_rows()
@@ -456,7 +478,8 @@ class Controller(VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
             draft_key = f"draft:{outline.outline_version}:{section.section_id}:{revision}"
             if self.store.db.execute('SELECT 1 FROM reuse_imports LIMIT 1').fetchone():
                 draft_key += ':' + digest(section.model_dump(mode='json'))
-            self.commit(draft_key, section.model_dump(mode="json"), [("draft", section.section_id, section.model_dump(mode="json"))])
+            draft_ref = self.commit(draft_key, section.model_dump(mode="json"), [("draft", section.section_id, section.model_dump(mode="json"))])['refs'][0]
+            self.conflict_dependency([self.head('freeze', 'outline')['version_id']], draft_ref['version_id'])
             sections.append((section_name, section))
             depth_checks.append(depth_status(section, material, brief['target_characters']))
         valid_claim_ids = {str(r["claim_ref"]["version_id"]) for rows in evidence_by_requirement.values() for r in rows if r["qualified"]}
@@ -472,6 +495,7 @@ class Controller(VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
                     raise RuntimeError("draft cites unapproved evidence")
                 if isinstance(fact, BoundedUnknownFact) and fact.coverage_assessment_version_id != assessment_refs.get(fact.requirement_ids[0]):
                     raise RuntimeError("draft cites wrong unknown assessment")
+        dispute_evidence_ids = self.validate_dispute_facts(sections, assessments)
         lines = []
         if self.assisted:
             provenance = (
@@ -494,13 +518,13 @@ class Controller(VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
                 for sentence in paragraph.sentences:
                     refs = []
                     for fact in section.facts:
-                        if fact.id in sentence.fact_ids and isinstance(fact, FactualFact):
+                        if fact.id in sentence.fact_ids and isinstance(fact, (FactualFact, DisputeFact)):
                             refs.extend(fact.evidence_ids)
                     investigations = [ref for fact in section.facts if fact.id in sentence.fact_ids and isinstance(fact, BoundedUnknownFact) for ref in fact.investigation_refs]
                     suffix = "".join(f" [^{ref}]" for ref in sorted(set(refs))) + "".join(f" [调查记录:{ref}]" for ref in sorted(set(investigations)))
                     sentences.append(sentence.text + suffix)
                 lines.append("".join(sentences))
-        for evidence_id in sorted(valid_evidence_ids):
+        for evidence_id in sorted(valid_evidence_ids | dispute_evidence_ids):
             row = self.store.db.execute("SELECT payload_json FROM entity_versions WHERE kind='evidence' AND id=? ORDER BY version DESC LIMIT 1", (evidence_id,)).fetchone()
             evidence = json.loads(row[0])
             if evidence['locator']['kind'] == 'pdf_region':
@@ -529,6 +553,8 @@ class Controller(VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
         report_packet["research_digest_json"] = canonical(self.research_digest()).decode()
         report_packet['writing_brief_json'] = canonical(brief).decode()
         report_packet['section_depth_json'] = canonical(depth_checks).decode()
+        if self.current_conflicts():
+            report_packet['conflicts_json'] = canonical(self.conflict_digest()).decode()
         revision_manifest = digest([(s.section_id,s.revision) for _,s in sections])
         audit_key = f"report:{outline.outline_version}:{revision_manifest}"
         if self.store.db.execute('SELECT 1 FROM reuse_imports LIMIT 1').fetchone():
@@ -578,6 +604,10 @@ class Controller(VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
         outcome = "complete_with_limitations" if self.assisted or any(a.disposition == "bounded_unknown" for a in assessments) else "complete"
         version = self.store.run()["state_version"]
         self.assert_reuse_delivery()
+        self.require_conflict_ready(assessments)
+        self.validate_dispute_facts(sections, assessments)
+        if freeze.get('conflicts') != self.conflict_freeze():
+            raise ResearchReopened('conflict evidence changed before delivery')
         version = self.store.run()['state_version']
         stop = StopDecision(outcome=outcome, evaluated_state_version=version, terminal_state_version=version+1, input_manifest_hash=digest({"report_hash": report_hash, "state_version": version}), gate_results=[GateResult(code="research", status="pass", reason="all research gates passed"), GateResult(code="delivery", status="pass", reason="report audit passed")], unresolved_ids=[], budget_snapshot=self.usage_snapshot(), report_hash=report_hash, **self.stop_context())
         stop_key = 'stop:' + digest(stop.model_dump(mode='json')) if self.store.db.execute('SELECT 1 FROM reuse_imports LIMIT 1').fetchone() else 'stop'

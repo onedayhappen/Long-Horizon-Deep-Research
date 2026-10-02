@@ -341,6 +341,8 @@ async def test_exact_budget_resume_and_audit_reservation(tmp_path, pdf):
     finally:
         c.close(); c.store.close()
     c = new_controller(tmp_path, pdf, name='short', calls=10)
+    # Isolate figure reservation from the planner closing reserve.
+    c.budget.exploration_floor = 0
     c.budget.action_scope = ('limited-action', 7)
     try:
         with pytest.raises(BudgetDenied, match='visual_audit_reserve'):

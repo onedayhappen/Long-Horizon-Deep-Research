@@ -66,6 +66,8 @@ class ResearchLoopMixin(PlanningMixin):
         result['evidence_audits'] = [r for r in self.heads('audit') if 'forward' in r['payload']]
         result['links'] = [dict(r) for r in self.store.db.execute('SELECT * FROM evidence_links ORDER BY link_id')]
         result['report_gaps'] = self.heads('report_gap')
+        if self.conflict_scan_state()['total'] or self.current_conflicts():
+            result['conflicts'] = self.conflict_digest()
         if self.visual_config.enabled:
             result['visual_gaps'] = self.heads('visual_gap')
         if self.store.db.execute('SELECT 1 FROM reuse_imports LIMIT 1').fetchone():
@@ -80,9 +82,12 @@ class ResearchLoopMixin(PlanningMixin):
     def planner_digest(self):
         # Semantic material is in outline_review and planning_memory; do not send
         # raw result snippets, snapshot metadata and all audit logs again.
-        return dict(queries=[dict(id=r['id'], text=r['payload']['text']) for r in self.heads('query')],
+        result = dict(queries=[dict(id=r['id'], text=r['payload']['text']) for r in self.heads('query')],
                     report_gaps=self.open_report_gaps(),
                     visual_gaps=self.heads('visual_gap') if self.visual_config.enabled else [])
+        if self.current_conflicts():
+            result['conflicts'] = self.conflict_digest()
+        return result
 
     def section_material(self, node):
         rows = self.evidence_rows()
@@ -93,10 +98,14 @@ class ResearchLoopMixin(PlanningMixin):
             selected = [row for row in selected if row['evidence_ref']['id'] in node.evidence_ids]
         allowed = {row['claim_ref']['version_id'] for row in selected}
         evidence_ids = {row['evidence_ref']['id'] for row in selected}
-        return {'claims': [r for r in self.heads('claim') if r['version_id'] in allowed],
+        result = {'claims': [r for r in self.heads('claim') if r['version_id'] in allowed],
                 'evidence': [r for r in self.heads('evidence') if r['id'] in evidence_ids],
                 'coverage': [r for r in self.heads('coverage') if r['id'] in node.requirement_ids],
                 'research_gaps': [r['payload'] for r in self.heads('outline_gap') if node.id in r['payload']['node_ids']]}
+        disputes = self.dispute_material(node.requirement_ids)
+        if disputes['conflicts']:
+            result.update(disputes)
+        return result
 
     def outline_review(self, outline):
         """Give planner and question audit the same audited basis for refinement.
@@ -148,6 +157,11 @@ class ResearchLoopMixin(PlanningMixin):
             cref = {k: c[k] for k in ('id','version','version_id')}; cref['kind'] = 'claim'
             eref = {k: e[k] for k in ('id','version','version_id')}; eref['kind'] = 'evidence'
             for rid in c['payload']['requirement_ids']:
+                requirement = next((r for r in self.contract.requirements if r.id == rid), None)
+                if requirement is None:
+                    continue
+                if self.conflict_claim_blocked(c['version_id']) and requirement.answer_mode != 'compare_evidence':
+                    continue
                 result[rid].append(dict(claim_ref=cref, evidence_ref=eref, source_class=e['payload']['source_class'],
                     source_class_verified=verdict['forward']['source_class_verified'], kind=c['payload']['kind'], qualified=True))
         return result
@@ -219,6 +233,7 @@ class ResearchLoopMixin(PlanningMixin):
         while True:
             self.tick()
             await self.review_reuse()
+            await self.review_conflicts()
             self.phase('researching')
             state = self.head('loop', 'controller')['payload']
             step = state['step']
@@ -247,6 +262,8 @@ class ResearchLoopMixin(PlanningMixin):
                           'budget_json': canonical(self.budget.snapshot()).decode()}
                 self.bound_planner_packet(packet)
                 action_key = f'plan:{step}'
+                if self.head('conflict_scan', 'current'):
+                    action_key += ':conflicts:' + self.conflict_freeze()['manifest_hash']
                 if self.store.db.execute('SELECT 1 FROM reuse_imports LIMIT 1').fetchone():
                     action_key += ':reuse:' + digest(packet)
                 action = await self.role('planner.next', action_key, packet, TypeAdapter(ResearchAction))
@@ -316,15 +333,21 @@ class ResearchLoopMixin(PlanningMixin):
                     if action.proposed_outcome in ('complete','complete_with_limitations'):
                         if not gates.research_ready or self.open_report_gaps():
                             raise InvalidOutline('research gates are not ready; continue evidence collection or revise outline')
+                        try:
+                            self.require_conflict_ready(assessments)
+                        except RuntimeError as exc:
+                            raise InvalidOutline(str(exc)) from exc
                         review_ref = await self.final_outline_review(outline)
                         # Freeze only after a planner termination proposal passes current gates.
                         freeze = dict(outline_version=outline.outline_version, coverage_refs=list(assessment_refs.values()),
+                            conflicts=self.conflict_freeze(),
                             question_space_passed=question_audit.review_status=='pass', search_bias_passed=plan['bias_passed'],
                             coverage_audit_passed=len(assessments)==len(contract.requirements), outline_review_ref=review_ref)
                         freeze_key = f'freeze:{step}'
                         if self.store.db.execute('SELECT 1 FROM reuse_imports LIMIT 1').fetchone():
                             freeze_key += ':' + digest(freeze)
-                        self.commit(freeze_key, freeze, [('freeze','outline',freeze)])
+                        frozen = self.commit(freeze_key, freeze, [('freeze','outline',freeze)])['refs'][0]
+                        self.conflict_dependency(list(assessment_refs.values()) + freeze['conflicts']['case_refs'], frozen['version_id'])
                         return await self.write_report(outline, assessments, assessment_refs)
                     if action.proposed_outcome == 'incomplete_plateau':
                         window = state['recent_rounds'][-self.saturation_effective_rounds:]

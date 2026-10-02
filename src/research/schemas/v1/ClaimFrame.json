@@ -1,0 +1,124 @@
+{
+  "$defs": {
+    "EvidenceBasis": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_version_id": {
+          "title": "Evidence Version Id",
+          "type": "string"
+        },
+        "quote": {
+          "minLength": 1,
+          "title": "Quote",
+          "type": "string"
+        }
+      },
+      "required": [
+        "evidence_version_id",
+        "quote"
+      ],
+      "title": "EvidenceBasis",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "basis": {
+      "items": {
+        "$ref": "#/$defs/EvidenceBasis"
+      },
+      "minItems": 1,
+      "title": "Basis",
+      "type": "array"
+    },
+    "claim_version_id": {
+      "title": "Claim Version Id",
+      "type": "string"
+    },
+    "conditions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Conditions",
+      "type": "array"
+    },
+    "method": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Method"
+    },
+    "metric": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Metric"
+    },
+    "subject": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Subject"
+    },
+    "time": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Time"
+    },
+    "unit": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Unit"
+    },
+    "version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Version"
+    }
+  },
+  "required": [
+    "claim_version_id",
+    "basis"
+  ],
+  "title": "ClaimFrame",
+  "type": "object"
+}

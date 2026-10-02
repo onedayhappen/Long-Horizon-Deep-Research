@@ -1,0 +1,67 @@
+{
+  "$defs": {
+    "EvidenceBasis": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_version_id": {
+          "title": "Evidence Version Id",
+          "type": "string"
+        },
+        "quote": {
+          "minLength": 1,
+          "title": "Quote",
+          "type": "string"
+        }
+      },
+      "required": [
+        "evidence_version_id",
+        "quote"
+      ],
+      "title": "EvidenceBasis",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "basis": {
+      "$ref": "#/$defs/EvidenceBasis"
+    },
+    "claim_version_id": {
+      "title": "Claim Version Id",
+      "type": "string"
+    },
+    "evidence_version_id": {
+      "title": "Evidence Version Id",
+      "type": "string"
+    },
+    "reason": {
+      "minLength": 1,
+      "title": "Reason",
+      "type": "string"
+    },
+    "relation": {
+      "enum": [
+        "supports",
+        "refutes",
+        "contextualizes",
+        "uncertain"
+      ],
+      "title": "Relation",
+      "type": "string"
+    },
+    "scope_match": {
+      "title": "Scope Match",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "claim_version_id",
+    "evidence_version_id",
+    "relation",
+    "scope_match",
+    "basis",
+    "reason"
+  ],
+  "title": "EvidenceRelationAudit",
+  "type": "object"
+}

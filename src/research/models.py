@@ -150,6 +150,14 @@ class Requirement(StrictModel):
     allow_unknown: bool
     unknown_check_ids: list[str]
     acceptance_checks: list[AcceptanceCheck] = Field(min_length=2)
+    answer_mode: Literal['resolve_fact', 'compare_evidence'] = 'resolve_fact'
+
+    @model_serializer(mode='wrap')
+    def compatible_answer_mode(self, handler):
+        result = handler(self)
+        if self.answer_mode == 'resolve_fact':
+            result.pop('answer_mode', None)
+        return result
 
     @model_validator(mode="after")
     def checks_valid(self) -> "Requirement":
@@ -357,7 +365,7 @@ class GateResult(StrictModel):
 
 
 class StopDecision(StrictModel):
-    outcome: Literal["complete", "complete_with_limitations", "incomplete_budget", "incomplete_plateau", "incomplete_no_progress", "incomplete_report_audit_loop", "blocked", "failed", "cancelled"]
+    outcome: Literal["complete", "complete_with_limitations", "incomplete_budget", "incomplete_context", "incomplete_plateau", "incomplete_no_progress", "incomplete_report_audit_loop", "blocked", "failed", "cancelled"]
     evaluated_state_version: int = Field(ge=0)
     terminal_state_version: int = Field(gt=0)
     input_manifest_hash: str

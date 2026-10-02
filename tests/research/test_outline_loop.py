@@ -206,7 +206,7 @@ def test_report_gap_can_research_new_evidence_and_complete(tmp_path):
     async def generate(request):
         nonlocal audits
         response=await base(request);value=json.loads(response.raw_text);p=request.data_packet
-        if request.role=='planner.next' and request.logical_action_key=='plan:4':
+        if request.role=='planner.next' and request.logical_action_key.split(':')[1]=='4':
             value=search_action(2);value['query_plan'][0].update(query_id='q3',text='虚构产品 A 单次导出与分批导出的条件')
         elif request.role=='researcher.extract' and p['source_id']=='q3.1':
             value['candidates'][0].update(claim_id='claim-3',claim_text=extra,excerpt=extra)

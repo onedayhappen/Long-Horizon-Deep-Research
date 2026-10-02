@@ -6,6 +6,18 @@ state transitions, not a real model's assessment of relevance or completeness.
 import json
 
 
+def conflict_response(packet):
+    """Scripted complementary verdicts for existing fictional CSV examples."""
+    material = json.loads(packet['material_json'])
+    if packet['phase'] == 'verify':
+        return dict(checked_claim_version_ids=[i['claim']['version_id'] for i in material],
+                    verdict='accept', original_claims_scoped=True, reason='Fictional independent comparison.')
+    return dict(conflict_type='complementary', frames=[dict(claim_version_id=i['claim']['version_id'],
+        basis=[dict(evidence_version_id=e['version_id'], quote=e['payload'].get('excerpt') or e['payload']['observation']['description'])
+               for e in i['evidence']]) for i in material], relations=[], disposition=None,
+        reason='Fictional complementary CSV statements.', next_investigation='')
+
+
 def outline_review_response(packet):
     outline = json.loads(packet['outline_json'])
     material = json.loads(packet['node_material_json'])

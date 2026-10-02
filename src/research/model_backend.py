@@ -22,13 +22,14 @@ class ProtocolError(RuntimeError):
 
 def response_schema(name: str, version: int) -> dict:
     from .reuse_models import ReuseMappingProposal
+    from .conflicts import ConflictProposal, ConflictVerification
     allowed = {cls.__name__: cls for cls in (
         models.InitializationProposal, models.QuestionSpaceAudit,
         models.CandidateEvidenceBundle, models.EvidenceAuditVerdict,
         models.CounterAuditVerdict, models.SearchBiasVerdict,
         models.CoverageProposal, models.DraftSection, models.ReportAudit,
         models.SourceSelection, models.GapVerdict, models.OutlineReview,
-        ReuseMappingProposal,
+        ReuseMappingProposal, ConflictProposal, ConflictVerification,
     )}
     from .visual_models import FigureReadPlan, VisualClaimProposal, VisualAudit, VisionProbeResult
     allowed.update({cls.__name__: cls for cls in (FigureReadPlan, VisualClaimProposal, VisualAudit, VisionProbeResult)})

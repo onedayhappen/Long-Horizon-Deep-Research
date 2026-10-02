@@ -84,6 +84,9 @@ class ScenarioAgent:
                 paragraphs=[dict(id=section+'-p',sentences=[dict(id=section+'-s',text=text,fact_ids=[f['id'] for f in facts])])],facts=facts,open_questions=[])
         elif role=='auditor.report':
             result=dict(report_hash=p['report_hash'],findings=[],checked_fact_ids=p['fact_ids'],checked_section_ids=p['section_ids'],answered_requirement_ids=['R1'])
+        elif role == 'auditor.conflict':
+            from scripts.research_review_fixture import conflict_response
+            result = conflict_response(p)
         elif role == 'auditor.outline':
             from scripts.research_review_fixture import outline_review_response
             result = outline_review_response(p)

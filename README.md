@@ -22,6 +22,7 @@ Deep Research is an evidence based research and report workflow. Define a questi
 
 ## Features
 
+- **Evidence conflicts:** Cross-source comparisons retain both sides, block unresolved factual conclusions, and support explicitly contracted dispute reports. See [conflict handling](docs/research/evidence-conflicts.md).
 - **Research contract:** A JSON contract defines the question, scope, required answers, evidence checks, and report structure. TOML controls execution mode and budgets.
 - **Traceable evidence:** Source snapshots, text locations, claims, review decisions, and citation relationships are stored with the run.
 - **Iterative outline:** Start with top-level questions and develop subtopics from evidence. Chapter gaps drive targeted investigation and require reviewed closure; sibling ordering, bounded research summaries and a final outline review guide writing. See the [outline design](docs/research/outline.md).

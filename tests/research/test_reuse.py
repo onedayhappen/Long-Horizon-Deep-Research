@@ -93,6 +93,9 @@ class ReuseAgent:
                          passed_check_ids=p['passed_check_ids'], missing_check_ids=p['missing_check_ids'], claim_version_ids=claims, investigation_refs=[])
         elif role == 'planner.next':
             value = dict(kind='terminate', coverage_refs=p['coverage_refs'], proposed_outcome='complete')
+        elif role == 'auditor.conflict':
+            from scripts.research_review_fixture import conflict_response
+            value = conflict_response(p)
         elif role == 'auditor.outline':
             from scripts.research_review_fixture import outline_review_response
             value = outline_review_response(p)

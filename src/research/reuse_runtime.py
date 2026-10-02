@@ -285,10 +285,9 @@ class ReuseRuntimeMixin:
             disposition = 'reused' if forward.verdict == 'supported' and reverse.verdict == 'no_objection' else 'rejected'
             if disposition == 'rejected':
                 reasons.append('local_audit_failed')
-            if conflicts:
-                # The existing controller has no conflict-disposition gate. Keep
-                # these bindings blocked until that explicit gate is satisfied;
-                # a generic no_objection response cannot resolve a known conflict.
+            if conflicts and not self.reuse_conflict_cleared(e['version_id'], claim['version_id']):
+                # Only a current, complete two-sided conflict review can clear
+                # this binding; ordinary entailment/no_objection is insufficient.
                 disposition = 'requires_refresh'
                 reasons.append('blocking_conflict')
         assessment = ReuseAssessment(import_id=self.store.db.execute('SELECT import_key FROM reuse_candidates WHERE evidence_version_id=? AND claim_version_id=?', (e['version_id'], claim['version_id'])).fetchone()[0],
@@ -331,6 +330,8 @@ class ReuseRuntimeMixin:
         result = []
         for row in self.heads('conflict'):
             p = row['payload']
+            if p.get('status') == 'dismissed':
+                continue
             if p.get('severity', 'blocking') not in {'blocking', 'material'}:
                 continue
             refs = p.get('claim_version_ids', []) + p.get('evidence_version_ids', [])

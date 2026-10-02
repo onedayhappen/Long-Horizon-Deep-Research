@@ -23,7 +23,7 @@ MAX_NODES = 10000
 MAX_EDGES = 30000
 MAX_MANIFEST = 16 * 1024 * 1024
 MAX_ANCESTORS = 32
-ALLOWED_KINDS = {'source', 'snapshot', 'evidence', 'claim', 'audit', 'historical_audit', 'conflict', 'provenance', 'limitation', 'figure', 'document_map'}
+ALLOWED_KINDS = {'source', 'snapshot', 'evidence', 'claim', 'audit', 'historical_audit', 'conflict', 'conflict_review', 'provenance', 'limitation', 'figure', 'document_map'}
 
 
 def entity(store, version_id):
@@ -167,11 +167,13 @@ def freeze_manifest(source, target, contract, selection):
         # Only explicitly typed dependencies; arbitrary neighbours are not walked.
         for dep in source.db.execute('SELECT * FROM dependency_edges WHERE to_version_id=?', (vid,)):
             if dep['reason'] in {'snapshot', 'evidence', 'claim', 'audit', 'context', 'limitation', 'provenance', 'conflict',
-                                 'figure', 'document_map', 'visual_evidence', 'visual_audit'}:
+                                 'figure', 'document_map', 'visual_evidence', 'visual_audit', 'claim_evidence'}:
                 queue.append(dep['from_version_id'])
                 edges.append(dict(dep))
         for row in conflicts:
             cp = json.loads(row['payload_json'])
+            if cp.get('status') == 'dismissed':
+                continue
             refs = cp.get('claim_version_ids', []) + cp.get('evidence_version_ids', [])
             ids = cp.get('claim_ids', []) + cp.get('evidence_ids', [])
             if cp.get('severity', 'blocking') in {'blocking', 'material'} and (vid in refs or item['id'] in ids):
