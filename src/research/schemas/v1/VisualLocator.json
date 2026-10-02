@@ -1,0 +1,134 @@
+{
+  "$defs": {
+    "PDFRegion": {
+      "additionalProperties": false,
+      "properties": {
+        "bbox": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "title": "Bbox",
+          "type": "array"
+        },
+        "coordinates": {
+          "const": "pymupdf_unrotated_points",
+          "default": "pymupdf_unrotated_points",
+          "title": "Coordinates",
+          "type": "string"
+        },
+        "cropbox": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "title": "Cropbox",
+          "type": "array"
+        },
+        "kind": {
+          "const": "pdf_region",
+          "default": "pdf_region",
+          "title": "Kind",
+          "type": "string"
+        },
+        "page": {
+          "minimum": 1,
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Page Size",
+          "type": "array"
+        },
+        "raw_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Raw Hash",
+          "type": "string"
+        },
+        "rotation": {
+          "enum": [
+            0,
+            90,
+            180,
+            270
+          ],
+          "title": "Rotation",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "raw_hash",
+        "page",
+        "bbox",
+        "page_size",
+        "cropbox",
+        "rotation"
+      ],
+      "title": "PDFRegion",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "caption_refs": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Caption Refs",
+      "type": "array"
+    },
+    "figure_version_id": {
+      "title": "Figure Version Id",
+      "type": "string"
+    },
+    "image_blob_hashes": {
+      "items": {
+        "pattern": "^[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Image Blob Hashes",
+      "type": "array"
+    },
+    "kind": {
+      "const": "pdf_region",
+      "default": "pdf_region",
+      "title": "Kind",
+      "type": "string"
+    },
+    "page_regions": {
+      "items": {
+        "$ref": "#/$defs/PDFRegion"
+      },
+      "minItems": 1,
+      "title": "Page Regions",
+      "type": "array"
+    },
+    "raw_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Raw Hash",
+      "type": "string"
+    }
+  },
+  "required": [
+    "figure_version_id",
+    "raw_hash",
+    "page_regions",
+    "image_blob_hashes",
+    "caption_refs"
+  ],
+  "title": "VisualLocator",
+  "type": "object"
+}

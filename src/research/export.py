@@ -57,6 +57,10 @@ def export_artifacts(store: Store) -> list[Path]:
         snapshot = store.db.execute("SELECT payload_json FROM entity_versions WHERE kind='snapshot' AND id=? ORDER BY version DESC LIMIT 1", (item["snapshot_id"],)).fetchone()
         item["id"] = row["id"]
         item["snapshot"] = json.loads(snapshot[0]) if snapshot else None
+        if item['locator']['kind'] == 'pdf_region':
+            from .visual_runtime import verify_visual_evidence
+            artifact, _ = verify_visual_evidence(store, item)
+            item['figure'] = artifact.model_dump()
         evidence.append(item)
     coverage = [json.loads(row["payload_json"]) for row in store.db.execute("SELECT v.payload_json FROM entity_versions v JOIN entity_heads h ON v.kind=h.kind AND v.id=h.id AND v.version=h.version WHERE v.kind='coverage' ORDER BY v.id")]
     conflicts = [json.loads(row["payload_json"]) for row in store.db.execute("SELECT payload_json FROM entity_versions WHERE kind='conflict' ORDER BY id,version")]

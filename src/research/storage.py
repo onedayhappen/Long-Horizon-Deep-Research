@@ -50,7 +50,7 @@ class Store:
             self.db.execute("PRAGMA synchronous=FULL")
         self.db.execute("PRAGMA busy_timeout=5000")
         self.db.execute("PRAGMA trusted_schema=OFF")
-        if self.db.execute("PRAGMA user_version").fetchone()[0] > 2:
+        if self.db.execute("PRAGMA user_version").fetchone()[0] > 3:
             raise RuntimeError("database schema is newer than this program")
         if self.db.execute("PRAGMA user_version").fetchone()[0] == 0 and not readonly:
             migration = files("src.research").joinpath("migrations/001_initial.sql").read_text("utf-8")
@@ -58,6 +58,9 @@ class Store:
         if self.db.execute("PRAGMA user_version").fetchone()[0] == 1 and not readonly:
             migration = files('src.research').joinpath('migrations/002_reuse.sql').read_text('utf-8')
             self.db.executescript('BEGIN IMMEDIATE;\n' + migration + '\nPRAGMA user_version=2;\nCOMMIT;')
+        if self.db.execute('PRAGMA user_version').fetchone()[0] == 2 and not readonly:
+            migration = files('src.research').joinpath('migrations/003_visual.sql').read_text('utf-8')
+            self.db.executescript('BEGIN IMMEDIATE;\n' + migration + '\nPRAGMA user_version=3;\nCOMMIT;')
 
     def close(self) -> None:
         self.db.close()

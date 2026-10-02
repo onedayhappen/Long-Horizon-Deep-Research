@@ -76,6 +76,9 @@ class Extraction(StrictModel):
     window_chars: int = Field(default=6000, gt=0)
     window_overlap_chars: int = Field(default=500, ge=0)
     max_windows_per_action: int = Field(default=6, gt=0)
+    max_memory_bytes: int = Field(default=536870912, gt=0)
+    max_input_bytes: int = Field(default=8000000, gt=0)
+    max_total_render_bytes: int = Field(default=50331648, gt=0)
 
     @model_validator(mode="after")
     def check_window(self) -> "Extraction":
@@ -106,6 +109,7 @@ class Research(StrictModel):
     extraction: Extraction = Field(default_factory=Extraction)
     audit: Audit = Field(default_factory=Audit)
     stopping: Stopping = Field(default_factory=Stopping)
+    visual: "Visual" = Field(default_factory=lambda: Visual())
 
 
 class ResearchConfig(StrictModel):
@@ -114,6 +118,8 @@ class ResearchConfig(StrictModel):
     @model_validator(mode="after")
     def check_modes(self) -> "ResearchConfig":
         r = self.research
+        if r.visual.enabled and (r.model.backend != "chat_json" or r.model.profile_path is None):
+            raise ValueError("visual requires a chat_json backend and an explicit vision profile")
         if r.execution.mode == "replay":
             if (r.model.backend, r.search.provider, r.fetch.mode) != ("replay", "replay", "replay") or r.execution.fixture_dir is None:
                 raise ValueError("replay requires replay model/search/fetch and fixture_dir")
@@ -130,6 +136,20 @@ class ResearchConfig(StrictModel):
             if r.execution.fixture_dir is not None or not all((r.model.base_url, r.model.model, r.model.profile_path, r.fetch.egress_proxy, r.fetch.egress_validation_path)):
                 raise ValueError("live requires model profile, endpoint, and validated proxy")
         return self
+
+
+class Visual(StrictModel):
+    enabled: bool = False
+    max_figures_per_action: int = Field(default=3, ge=1, le=3)
+    max_images_per_figure: int = Field(default=2, ge=1, le=6)
+    dpi: Literal[150] = 150
+    detail_dpi: Literal[300] = 300
+    max_image_pixels: int = Field(default=6000000, gt=0, le=6000000)
+    max_image_bytes: int = Field(default=8388608, gt=0, le=8388608)
+
+
+Research.model_rebuild()
+ResearchConfig.model_rebuild()
 
 
 def load_config(path: Path) -> ResearchConfig:

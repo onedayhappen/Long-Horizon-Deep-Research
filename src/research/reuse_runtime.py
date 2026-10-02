@@ -240,7 +240,13 @@ class ReuseRuntimeMixin:
         text = self.store.read_blob(snap['payload']['text_hash']).decode('utf-8')
         from .extract import verify_locator
         from .models import TextSpan, EntityRef
-        if not verify_locator(text, TextSpan.model_validate(e['payload']['locator']), e['payload']['excerpt']):
+        visual = e['payload']['locator']['kind'] == 'pdf_region'
+        if visual:
+            from .visual_runtime import verify_visual_evidence
+            verify_visual_evidence(self.store, e['payload'])
+            if not self.visual_config.enabled:
+                reasons.append('visual_profile_required')
+        elif not verify_locator(text, TextSpan.model_validate(e['payload']['locator']), e['payload']['excerpt']):
             raise ReuseError('invalid_locator', e['version_id'])
         disposition = 'rejected' if any(r in reasons for r in ('scope_mismatch', 'time_scope_mismatch', 'future_knowledge', 'source_withdrawn')) else 'requires_refresh' if reasons else 'reuse_candidate'
         validation = None
@@ -257,18 +263,23 @@ class ReuseRuntimeMixin:
         token = digest(semantic)
         if disposition == 'reuse_candidate':
             locator = e['payload']['locator']
-            packet = dict(claim_version_id=claim['version_id'], evidence_id=e['id'], excerpt_hash=locator['quote_hash'],
+            packet = dict(claim_version_id=claim['version_id'], evidence_id=e['id'], excerpt_hash=locator.get('quote_hash', digest(locator)),
                           source_class=e['payload']['source_class'], url=snap['payload']['url'], claim_text=claim['payload']['text'],
-                          excerpt=e['payload']['excerpt'], source_context=text[max(0, locator['start'] - 1500):locator['end'] + 1500],
+                          excerpt=e['payload']['excerpt'], source_context=text[max(0, locator.get('start', 0) - 1500):locator.get('end', 0) + 1500],
                           requirement_id=requirement.id, requirement_question=requirement.question)
             if notices:
                 packet['invalidation_notices_json'] = canonical(notices).decode()
             conflicts = self.reuse_conflict_context(e, claim)
             if conflicts:
                 packet['conflicts_json'] = canonical(conflicts).decode()
-            forward = await self.role('auditor.evidence', f'reuse-forward:{bid}:{token}', packet, EvidenceAuditVerdict)
-            reverse = await self.role('auditor.counter_entailment', f'reuse-reverse:{bid}:{token}', packet, CounterAuditVerdict)
-            payload = dict(forward=forward.model_dump(), reverse=reverse.model_dump(), input_manifest_hash=digest(packet))
+            if visual:
+                payload, _ = await self.audit_visual(e['payload'], claim['payload'], f'reuse:{bid}:{token}', requirement=requirement)
+                forward = EvidenceAuditVerdict.model_validate(payload['forward'])
+                reverse = CounterAuditVerdict.model_validate(payload['reverse'])
+            else:
+                forward = await self.role('auditor.evidence', f'reuse-forward:{bid}:{token}', packet, EvidenceAuditVerdict)
+                reverse = await self.role('auditor.counter_entailment', f'reuse-reverse:{bid}:{token}', packet, CounterAuditVerdict)
+                payload = dict(forward=forward.model_dump(), reverse=reverse.model_dump(), input_manifest_hash=digest(packet))
             receipt = self.commit(f'reuse-audit:{bid}:{token}', payload, [('audit', f'reuse-audit:{bid}', payload)])
             audit_refs = [receipt['refs'][0]['version_id']]
             disposition = 'reused' if forward.verdict == 'supported' and reverse.verdict == 'no_objection' else 'rejected'

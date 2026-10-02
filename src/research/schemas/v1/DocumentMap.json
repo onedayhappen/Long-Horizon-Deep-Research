@@ -1,0 +1,149 @@
+{
+  "$defs": {
+    "FigureCandidate": {
+      "additionalProperties": false,
+      "properties": {
+        "caption_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Caption Refs",
+          "type": "array"
+        },
+        "extraction_status": {
+          "const": "ambiguous",
+          "default": "ambiguous",
+          "title": "Extraction Status",
+          "type": "string"
+        },
+        "figure_label": {
+          "maxLength": 12000,
+          "minLength": 1,
+          "title": "Figure Label",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 12000,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "mention_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Mention Refs",
+          "type": "array"
+        },
+        "pages": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Pages",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "figure_label",
+        "caption_refs",
+        "mention_refs",
+        "pages"
+      ],
+      "title": "FigureCandidate",
+      "type": "object"
+    },
+    "TextBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "bbox": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "title": "Bbox",
+          "type": "array"
+        },
+        "id": {
+          "maxLength": 12000,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "page": {
+          "title": "Page",
+          "type": "integer"
+        },
+        "text": {
+          "maxLength": 12000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "page",
+        "bbox",
+        "text"
+      ],
+      "title": "TextBlock",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "blocks": {
+      "items": {
+        "$ref": "#/$defs/TextBlock"
+      },
+      "title": "Blocks",
+      "type": "array"
+    },
+    "figures": {
+      "items": {
+        "$ref": "#/$defs/FigureCandidate"
+      },
+      "title": "Figures",
+      "type": "array"
+    },
+    "pages": {
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Pages",
+      "type": "array"
+    },
+    "parser_version": {
+      "maxLength": 12000,
+      "minLength": 1,
+      "title": "Parser Version",
+      "type": "string"
+    },
+    "raw_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Raw Hash",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "text_available",
+        "needs_ocr"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "raw_hash",
+    "parser_version",
+    "pages",
+    "blocks",
+    "figures",
+    "status"
+  ],
+  "title": "DocumentMap",
+  "type": "object"
+}

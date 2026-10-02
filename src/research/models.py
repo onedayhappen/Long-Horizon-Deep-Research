@@ -5,7 +5,7 @@ from decimal import Decimal
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator, field_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator, field_validator, model_serializer
 
 
 class StrictModel(BaseModel):
@@ -256,6 +256,14 @@ class Usage(StrictModel):
     output_tokens: int | None = Field(default=None, ge=0)
     cost: str | None = None
     basis: Literal["provider", "reserved_upper_bound", "unknown"] = "unknown"
+    provider_details: dict = Field(default_factory=dict)
+
+    @model_serializer(mode='wrap')
+    def compatible_usage(self, handler):
+        result = handler(self)
+        if not self.provider_details:
+            result.pop('provider_details', None)
+        return result
 
 
 class SearchBatch(StrictModel):
@@ -429,7 +437,7 @@ ResearchAction = Annotated[SearchAction | OutlinePatchAction | TerminateProposal
 
 
 class RoleRequest(StrictModel):
-    role: Literal["planner.initialize", "auditor.question_space", "planner.next", "researcher.extract", "auditor.evidence", "auditor.counter_entailment", "auditor.provenance", "auditor.conflict", "auditor.coverage", "auditor.search_bias", "writer.section", "auditor.report", "planner.reuse_map"]
+    role: Literal["planner.initialize", "auditor.question_space", "planner.next", "researcher.extract", "auditor.evidence", "auditor.counter_entailment", "auditor.provenance", "auditor.conflict", "auditor.coverage", "auditor.search_bias", "writer.section", "auditor.report", "planner.reuse_map", "researcher.inspect_figures", "researcher.read_figure", "auditor.visual", "auditor.visual_counter", "vision.probe"]
     logical_action_key: str
     input_manifest_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
     contract_version: int = Field(gt=0)
@@ -440,6 +448,30 @@ class RoleRequest(StrictModel):
     response_schema_id: str
     response_schema_version: int = Field(gt=0)
     max_output_tokens: int = Field(gt=0)
+    images: list["RoleImage"] = Field(default_factory=list)
+
+
+class RoleImage(StrictModel):
+    blob_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    media_type: Literal["image/png"] = "image/png"
+    data_base64: str
+    width: int = Field(gt=0)
+    height: int = Field(gt=0)
+
+    @model_validator(mode="after")
+    def valid_content(self):
+        import base64
+        import hashlib
+        import struct
+        data = base64.b64decode(self.data_base64, validate=True)
+        if not data.startswith(b'\x89PNG\r\n\x1a\n') or len(data) < 24 or hashlib.sha256(data).hexdigest() != self.blob_hash:
+            raise ValueError('image content/hash mismatch')
+        if struct.unpack('>II', data[16:24]) != (self.width, self.height):
+            raise ValueError('image dimensions mismatch')
+        return self
+
+
+RoleRequest.model_rebuild()
 
 
 class RoleResponse(StrictModel):

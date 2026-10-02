@@ -1,0 +1,18 @@
+[research.execution]
+mode = "assisted"
+
+[research.model]
+backend = "chat_json"
+base_url = "https://your-compatible-service.example/v1"
+model = "your-vision-model"
+api_key_env = "RESEARCH_MODEL_API_KEY"
+profile_path = "vision-profile.json"
+
+[research.search]
+provider = "external"
+
+[research.fetch]
+mode = "external"
+
+[research.visual]
+enabled = true

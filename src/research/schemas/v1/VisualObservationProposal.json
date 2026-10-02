@@ -1,0 +1,171 @@
+{
+  "$defs": {
+    "ReportedNumber": {
+      "additionalProperties": false,
+      "properties": {
+        "category": {
+          "const": "reported",
+          "title": "Category",
+          "type": "string"
+        },
+        "conditions": {
+          "items": {
+            "maxLength": 12000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Conditions",
+          "type": "array"
+        },
+        "image_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Image Hash",
+          "type": "string"
+        },
+        "label_bbox": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "title": "Label Bbox",
+          "type": "array"
+        },
+        "label_transcription": {
+          "maxLength": 12000,
+          "minLength": 1,
+          "title": "Label Transcription",
+          "type": "string"
+        },
+        "unit": {
+          "maxLength": 12000,
+          "minLength": 1,
+          "title": "Unit",
+          "type": "string"
+        },
+        "value": {
+          "pattern": "^-?\\d+(\\.\\d+)?$",
+          "title": "Value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "category",
+        "value",
+        "unit",
+        "label_transcription",
+        "image_hash",
+        "label_bbox",
+        "conditions"
+      ],
+      "title": "ReportedNumber",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "axes_and_units": {
+      "items": {
+        "maxLength": 12000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "title": "Axes And Units",
+      "type": "array"
+    },
+    "conditions": {
+      "items": {
+        "maxLength": 12000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "title": "Conditions",
+      "type": "array"
+    },
+    "description": {
+      "maxLength": 12000,
+      "minLength": 1,
+      "title": "Description",
+      "type": "string"
+    },
+    "figure_type": {
+      "enum": [
+        "architecture",
+        "plot",
+        "example",
+        "heatmap",
+        "table",
+        "other"
+      ],
+      "title": "Figure Type",
+      "type": "string"
+    },
+    "legend": {
+      "items": {
+        "maxLength": 12000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "title": "Legend",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "maxLength": 12000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "title": "Limitations",
+      "type": "array"
+    },
+    "numbers": {
+      "items": {
+        "$ref": "#/$defs/ReportedNumber"
+      },
+      "title": "Numbers",
+      "type": "array"
+    },
+    "pending_checks": {
+      "items": {
+        "maxLength": 12000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "title": "Pending Checks",
+      "type": "array"
+    },
+    "subpanels": {
+      "items": {
+        "maxLength": 12000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "title": "Subpanels",
+      "type": "array"
+    },
+    "transcriptions": {
+      "items": {
+        "maxLength": 12000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "title": "Transcriptions",
+      "type": "array"
+    }
+  },
+  "required": [
+    "figure_type",
+    "description",
+    "subpanels",
+    "axes_and_units",
+    "legend",
+    "conditions",
+    "transcriptions",
+    "limitations",
+    "pending_checks",
+    "numbers"
+  ],
+  "title": "VisualObservationProposal",
+  "type": "object"
+}

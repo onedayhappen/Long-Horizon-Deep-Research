@@ -1,4 +1,44 @@
 {
+  "$defs": {
+    "RoleImage": {
+      "additionalProperties": false,
+      "properties": {
+        "blob_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Blob Hash",
+          "type": "string"
+        },
+        "data_base64": {
+          "title": "Data Base64",
+          "type": "string"
+        },
+        "height": {
+          "exclusiveMinimum": 0,
+          "title": "Height",
+          "type": "integer"
+        },
+        "media_type": {
+          "const": "image/png",
+          "default": "image/png",
+          "title": "Media Type",
+          "type": "string"
+        },
+        "width": {
+          "exclusiveMinimum": 0,
+          "title": "Width",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "blob_hash",
+        "data_base64",
+        "width",
+        "height"
+      ],
+      "title": "RoleImage",
+      "type": "object"
+    }
+  },
   "additionalProperties": false,
   "properties": {
     "contract_version": {
@@ -28,6 +68,13 @@
       },
       "title": "Data Packet",
       "type": "object"
+    },
+    "images": {
+      "items": {
+        "$ref": "#/$defs/RoleImage"
+      },
+      "title": "Images",
+      "type": "array"
     },
     "input_manifest_hash": {
       "pattern": "^[0-9a-f]{64}$",
@@ -71,7 +118,12 @@
         "auditor.search_bias",
         "writer.section",
         "auditor.report",
-        "planner.reuse_map"
+        "planner.reuse_map",
+        "researcher.inspect_figures",
+        "researcher.read_figure",
+        "auditor.visual",
+        "auditor.visual_counter",
+        "vision.probe"
       ],
       "title": "Role",
       "type": "string"

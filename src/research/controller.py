@@ -28,6 +28,7 @@ from .outline import ordered_nodes
 from .loop import ResearchLoopMixin, ResearchStopped, ResearchReopened
 from .reuse_runtime import ReuseRuntimeMixin
 from .storage import now
+from .visual_runtime import VisualRuntimeMixin
 
 
 class IncompleteResearch(RuntimeError):
@@ -37,8 +38,8 @@ class IncompleteResearch(RuntimeError):
 T = TypeVar("T")
 
 
-class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
-    def __init__(self, store: Store, contract: ResearchContract, fixture_dir: Path | None, max_calls: int, pools: list[int], *, external_providers: tuple | None = None, max_rounds: int = 20, max_duration_seconds: int = 3600, max_no_progress_actions: int = 3, saturation_effective_rounds: int = 3, max_revision_cycles: int = 2, max_output_tokens: int = 4096, api_model_name: str | None = None):
+class Controller(VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
+    def __init__(self, store: Store, contract: ResearchContract, fixture_dir: Path | None, max_calls: int, pools: list[int], *, external_providers: tuple | None = None, max_rounds: int = 20, max_duration_seconds: int = 3600, max_no_progress_actions: int = 3, saturation_effective_rounds: int = 3, max_revision_cycles: int = 2, max_output_tokens: int = 4096, api_model_name: str | None = None, research_config=None):
         self.max_output_tokens = max_output_tokens
         self.api_model_name = api_model_name
         self.clock = now
@@ -67,6 +68,9 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
         self.budget = BudgetManager(store, max_calls, pools)
         self.owner = str(uuid.uuid4())
         self.generation = store.acquire(self.owner)
+        from .config import Visual, Extraction
+        self.visual_config = research_config.visual if research_config else Visual()
+        self.extraction_config = research_config.extraction if research_config else Extraction()
 
     def close(self) -> None:
         self.tick(enforce=False)
@@ -89,9 +93,12 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
             db.execute("UPDATE runs SET phase='terminal',lifecycle_status=?,research_outcome=?,current_stop_version_id=?", ("failed" if outcome == "failed" else "incomplete", outcome, receipt["refs"][0]["version_id"]))
         (self.store.run_dir / "stop.json").write_bytes(canonical(stop.model_dump(mode="json")))
 
-    async def role(self, role: str, action_key: str, packet: dict[str, str | int | bool | list[str]], result_type: type[T] | TypeAdapter) -> T:
+    async def role(self, role: str, action_key: str, packet: dict[str, str | int | bool | list[str]], result_type: type[T] | TypeAdapter, *, image_hashes=None) -> T:
         self.tick()
         packet = dict(packet, contract_json=self.contract.model_dump_json())
+        if image_hashes:
+            packet['visual_image_hashes'] = list(image_hashes)
+        images = []
         # A logical step owns its immutable request. Resume uses that exact packet,
         # even if a crash occurred after part of the step committed its results.
         request_dir = self.store.run_dir / 'role-inputs'
@@ -110,6 +117,9 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
             temp = request_path.with_suffix('.tmp')
             temp.write_bytes(canonical({'role': role, 'key': action_key, 'contract_version': self.contract.version, 'packet': packet}))
             os.replace(temp, request_path)
+        if packet.get('visual_image_hashes'):
+            from .visual_runtime import role_images
+            images = role_images(self.store, packet['visual_image_hashes'])
         manifest_hash = digest({"role": role, "logical_action_key": action_key, "contract_version": self.contract.version, "packet": packet})
         action_id = f"role:{action_key}"
         row = self.store.db.execute("SELECT result_json,input_manifest_hash FROM actions WHERE action_id=?", (action_id,)).fetchone()
@@ -120,8 +130,9 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
         else:
             template = f"{role}.v1"
             template_hash = digest(role_template(role))
-            request = RoleRequest(role=role, logical_action_key=action_key, input_manifest_hash=manifest_hash, contract_version=self.contract.version, policy_version=1, system_template_id=template, system_template_hash=template_hash, data_packet=packet, response_schema_id=getattr(result_type, "__name__", "ResearchAction"), response_schema_version=1, max_output_tokens=self.max_output_tokens)
+            request = RoleRequest(role=role, logical_action_key=action_key, input_manifest_hash=manifest_hash, contract_version=self.contract.version, policy_version=1, system_template_id=template, system_template_hash=template_hash, data_packet=packet, response_schema_id=getattr(result_type, "__name__", "ResearchAction"), response_schema_version=1, max_output_tokens=self.max_output_tokens, images=images)
             attempt = self.budget.reserve(action_id, "role", manifest_hash, "report_audit" if role == "auditor.report" else "writing" if role == "writer.section" else "research", self.owner, self.generation)
+            response = None
             try:
                 from .context import ContextBuilder
                 ContextBuilder.save(self.store, request, attempt, self.owner, self.generation)
@@ -133,7 +144,7 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
                     db.execute("UPDATE actions SET result_json=?,result_hash=? WHERE action_id=?", (canonical(raw_response).decode(), digest(raw_response), action_id))
             except Exception as exc:
                 from .models import Usage
-                self.budget.settle(attempt, Usage(basis="unknown"), error=type(exc).__name__)
+                self.budget.settle(attempt, response.usage if response is not None else getattr(exc, 'usage', None) or Usage(basis="unknown"), error=type(exc).__name__)
                 raise
         if isinstance(result_type, TypeAdapter):
             return result_type.validate_python(raw_response, strict=True)
@@ -196,7 +207,7 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
                     self.budget.settle(attempt, Usage(basis="unknown"), error=type(exc).__name__)
                     raise
             raw_hash = self.store.put_blob(raw)
-            parsed, text = parse_document(raw, fetched.mime or "")
+            parsed, text, document = await self.parse_source(raw, fetched.mime or "")
             text_hash = self.store.put_blob(text.encode("utf-8"))
             if raw_hash != fetched.blob_hash or text_hash != parsed.text_blob_hash:
                 raise RuntimeError("snapshot hash mismatch")
@@ -215,6 +226,8 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
                     raise RuntimeError("invalid evidence locator")
                 evidence_id = f"{hit.hit_id}.e{index+1}"
                 evidence = {"snapshot_id": hit.hit_id, "excerpt": candidate.excerpt, "locator": locator.model_dump(mode="json"), "source_class": candidate.source_class, "observation_root": candidate.observation_root, "validity": "active"}
+                if document is not None:
+                    evidence['observation_root'] = raw_hash
                 claim = {"text": candidate.claim_text, "kind": candidate.claim_kind, "requirement_ids": candidate.requirement_ids, "validity": "current"}
                 receipt = self.commit(f"candidate:{evidence_id}", {"claim": claim, "evidence": evidence}, [("evidence", evidence_id, evidence), ("claim", candidate.claim_id, claim)])
                 refs = {item["kind"]: item for item in receipt["refs"]}
@@ -231,6 +244,16 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
                     self.store.add_link(f"link:{evidence_id}", EntityRef.model_validate(refs["claim"]), EntityRef.model_validate(refs["evidence"]), EntityRef.model_validate(audit_receipt["refs"][0]), "supports", self.owner, self.generation)
                 for rid in candidate.requirement_ids:
                     evidence_by_requirement[rid].append({"claim_ref": refs["claim"], "evidence_ref": refs["evidence"], "source_class": candidate.source_class, "source_class_verified": forward.source_class_verified, "kind": candidate.claim_kind, "qualified": qualified})
+            if document is not None:
+                await self.research_figures(action, hit, document)
+            elif self.visual_config.enabled and fetched.mime == 'text/html':
+                from .visual_extract import discover_html_figures
+                figures = discover_html_figures(raw, hit.url)
+                if figures:
+                    requirements_for_action = [r.id for r in self.contract.requirements if any(
+                        check.check_id in action.acceptance_check_ids for check in r.acceptance_checks)]
+                    self.visual_gap('html:' + raw_hash, requirements_for_action,
+                                    'requires_validated_image_fetch: ' + canonical(figures).decode())
 
 
     async def assess(self, outline: OutlineState, question_audit: QuestionSpaceAudit):
@@ -274,6 +297,11 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
                             passed.add(check.check_id)
                             break
             research_checks = {c.check_id for c in requirement.acceptance_checks if c.stage == "research"}
+            visual_gaps = [g for g in self.heads('visual_gap') if g['payload']['status'] == 'open'
+                           and requirement.id in g['payload']['requirement_ids']]
+            if visual_gaps:
+                # Unread figures must not be hidden by other text evidence.
+                passed -= {c.check_id for c in requirement.acceptance_checks if c.code == 'has_current_support'}
             proposal = await self.role("auditor.coverage", f"coverage:{requirement.id}:{token}", {"requirement_id": requirement.id, "passed_check_ids": sorted(passed), "missing_check_ids": sorted(research_checks - passed), "research_digest_json": canonical(self.research_digest()).decode()}, CoverageProposal)
             if proposal.requirement_id != requirement.id or set(proposal.passed_check_ids) != passed or set(proposal.missing_check_ids) != research_checks - passed:
                 raise RuntimeError("coverage proposal contradicts deterministic checks")
@@ -282,6 +310,8 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
                 raise RuntimeError("coverage refers to unsupported claim")
             if proposal.disposition == "satisfied" and passed != research_checks:
                 raise RuntimeError("unsupported coverage claim")
+            if proposal.disposition == 'satisfied' and visual_gaps:
+                raise RuntimeError('unresolved visual reading obligation')
             if proposal.disposition == "satisfied":
                 for check in requirement.acceptance_checks:
                     if check.code == 'has_current_support' and len(set(proposal.claim_version_ids)) < check.params.min_claims:
@@ -398,7 +428,15 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
         for evidence_id in sorted(valid_evidence_ids):
             row = self.store.db.execute("SELECT payload_json FROM entity_versions WHERE kind='evidence' AND id=? ORDER BY version DESC LIMIT 1", (evidence_id,)).fetchone()
             evidence = json.loads(row[0])
-            citation = f"local snapshot {evidence['snapshot_id']}, text SHA-256 {evidence['locator']['text_blob_hash']}, span {evidence['locator']['start']}:{evidence['locator']['end']}"
+            if evidence['locator']['kind'] == 'pdf_region':
+                from .visual_runtime import verify_visual_evidence
+                artifact, _ = verify_visual_evidence(self.store, evidence)
+                citation = (f"PDF SHA-256 {artifact.snapshot_ref}, "
+                    f"pages {sorted({r.page for r in artifact.page_regions})}, {artifact.figure_label}; "
+                    + '; '.join(evidence['observation']['conditions']) + '; '
+                    + ' '.join(f'[图像预览](blobs/{i.blob_hash})' for i in artifact.images))
+            else:
+                citation = f"local snapshot {evidence['snapshot_id']}, text SHA-256 {evidence['locator']['text_blob_hash']}, span {evidence['locator']['start']}:{evidence['locator']['end']}"
             if self.assisted:
                 snapshot_row = self.store.db.execute("SELECT payload_json FROM entity_versions WHERE kind='snapshot' AND id=? ORDER BY version DESC LIMIT 1", (evidence['snapshot_id'],)).fetchone()
                 snapshot = json.loads(snapshot_row[0])

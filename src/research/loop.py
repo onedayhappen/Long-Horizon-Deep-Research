@@ -65,6 +65,8 @@ class ResearchLoopMixin:
         result['evidence_audits'] = [r for r in self.heads('audit') if 'forward' in r['payload']]
         result['links'] = [dict(r) for r in self.store.db.execute('SELECT * FROM evidence_links ORDER BY link_id')]
         result['report_gaps'] = self.heads('report_gap')
+        if self.visual_config.enabled:
+            result['visual_gaps'] = self.heads('visual_gap')
         if self.store.db.execute('SELECT 1 FROM reuse_imports LIMIT 1').fetchone():
             from .reuse import reuse_summary
             result['reuse_summary'] = reuse_summary(self.store)
@@ -77,7 +79,7 @@ class ResearchLoopMixin:
     def planner_digest(self):
         result = self.research_digest()
         result['evidence'] = [dict(id=r['id'], version_id=r['version_id'], snapshot_id=r['payload']['snapshot_id'],
-            source_class=r['payload']['source_class'], excerpt_hash=r['payload']['locator']['quote_hash']) for r in result['evidence']]
+            source_class=r['payload']['source_class'], excerpt_hash=r['payload']['locator'].get('quote_hash', digest(r['payload']['locator']))) for r in result['evidence']]
         return result
 
     def section_material(self, node):
@@ -105,6 +107,9 @@ class ResearchLoopMixin:
                 continue
             if c['payload'].get('validity') != 'current' or e['payload'].get('validity') != 'active':
                 continue
+            if e['payload']['locator']['kind'] == 'pdf_region':
+                from .visual_runtime import verify_visual_evidence
+                verify_visual_evidence(self.store, e['payload'])
             binding = self.store.db.execute('SELECT * FROM reuse_bindings WHERE local_claim_version_id=?', (c['version_id'],)).fetchone()
             if binding and not self.reuse_binding_valid(binding):
                 continue
@@ -123,7 +128,7 @@ class ResearchLoopMixin:
         # Ignore renamed IDs and alternate locators for the same text.
         return sorted({digest({'claim': ' '.join(r['payload']['text'].split()).casefold(), 'kind': r['payload']['kind']})
                        for r in self.heads('claim')} |
-                      {digest({'excerpt': ' '.join(r['payload']['excerpt'].split()).casefold()}) for r in self.heads('evidence')})
+                      {digest({'excerpt': ' '.join((r['payload']['excerpt'] or r['payload'].get('observation', {}).get('description', '')).split()).casefold()}) for r in self.heads('evidence')})
 
     async def question_audit(self, outline):
         packet = {'question': self.contract.question, 'question_ids': outline.question_ids,

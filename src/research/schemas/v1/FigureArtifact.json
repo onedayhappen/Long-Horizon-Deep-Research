@@ -1,0 +1,236 @@
+{
+  "$defs": {
+    "PDFRegion": {
+      "additionalProperties": false,
+      "properties": {
+        "bbox": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "title": "Bbox",
+          "type": "array"
+        },
+        "coordinates": {
+          "const": "pymupdf_unrotated_points",
+          "default": "pymupdf_unrotated_points",
+          "title": "Coordinates",
+          "type": "string"
+        },
+        "cropbox": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "title": "Cropbox",
+          "type": "array"
+        },
+        "kind": {
+          "const": "pdf_region",
+          "default": "pdf_region",
+          "title": "Kind",
+          "type": "string"
+        },
+        "page": {
+          "minimum": 1,
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Page Size",
+          "type": "array"
+        },
+        "raw_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Raw Hash",
+          "type": "string"
+        },
+        "rotation": {
+          "enum": [
+            0,
+            90,
+            180,
+            270
+          ],
+          "title": "Rotation",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "raw_hash",
+        "page",
+        "bbox",
+        "page_size",
+        "cropbox",
+        "rotation"
+      ],
+      "title": "PDFRegion",
+      "type": "object"
+    },
+    "RenderedImage": {
+      "additionalProperties": false,
+      "properties": {
+        "blob_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Blob Hash",
+          "type": "string"
+        },
+        "dpi": {
+          "enum": [
+            150,
+            300
+          ],
+          "title": "Dpi",
+          "type": "integer"
+        },
+        "height": {
+          "exclusiveMinimum": 0,
+          "title": "Height",
+          "type": "integer"
+        },
+        "locator": {
+          "$ref": "#/$defs/PDFRegion"
+        },
+        "pixel_to_pdf": {
+          "maxItems": 6,
+          "minItems": 6,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Pixel To Pdf",
+          "type": "array"
+        },
+        "purpose": {
+          "enum": [
+            "context",
+            "detail"
+          ],
+          "title": "Purpose",
+          "type": "string"
+        },
+        "width": {
+          "exclusiveMinimum": 0,
+          "title": "Width",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "blob_hash",
+        "locator",
+        "width",
+        "height",
+        "dpi",
+        "pixel_to_pdf",
+        "purpose"
+      ],
+      "title": "RenderedImage",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "caption_refs": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Caption Refs",
+      "type": "array"
+    },
+    "extraction_status": {
+      "enum": [
+        "located",
+        "ambiguous"
+      ],
+      "title": "Extraction Status",
+      "type": "string"
+    },
+    "figure_label": {
+      "maxLength": 12000,
+      "minLength": 1,
+      "title": "Figure Label",
+      "type": "string"
+    },
+    "images": {
+      "items": {
+        "$ref": "#/$defs/RenderedImage"
+      },
+      "maxItems": 6,
+      "minItems": 1,
+      "title": "Images",
+      "type": "array"
+    },
+    "mention_refs": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Mention Refs",
+      "type": "array"
+    },
+    "page_regions": {
+      "items": {
+        "$ref": "#/$defs/PDFRegion"
+      },
+      "maxItems": 6,
+      "minItems": 1,
+      "title": "Page Regions",
+      "type": "array"
+    },
+    "render_profile": {
+      "additionalProperties": true,
+      "title": "Render Profile",
+      "type": "object"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "snapshot_ref": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Snapshot Ref",
+      "type": "string"
+    }
+  },
+  "required": [
+    "snapshot_ref",
+    "figure_label",
+    "caption_refs",
+    "mention_refs",
+    "page_regions",
+    "images",
+    "render_profile",
+    "extraction_status"
+  ],
+  "title": "FigureArtifact",
+  "type": "object"
+}

@@ -34,6 +34,12 @@ def _store(run_dir: Path, config: ResearchConfig) -> Store:
     return Store(run_dir, namespace_seed=manifest.get("namespace_seed"))
 
 
+def _model_backend(config):
+    if config.research.visual.enabled:
+        return configured_backend(config.research.model, vision_enabled=True)
+    return configured_backend(config.research.model)
+
+
 async def _execute(run_dir: Path, contract: ResearchContract, config: ResearchConfig) -> int:
     store = _store(run_dir, config)
     try:
@@ -42,7 +48,7 @@ async def _execute(run_dir: Path, contract: ResearchContract, config: ResearchCo
             from .assisted import AssistantMailbox, ExternalRoleBackend, ExternalSearchProvider, ExternalFetchProvider
             elapsed = sum(json.loads(row[0])['seconds'] for row in store.db.execute("SELECT payload_json FROM events WHERE kind='active_time'"))
             mailbox = AssistantMailbox(run_dir / "bridge", max(0,config.research.budget.max_duration_seconds-elapsed))
-            roles = configured_backend(config.research.model) if config.research.model.backend == "chat_json" else ExternalRoleBackend(mailbox)
+            roles = _model_backend(config) if config.research.model.backend == "chat_json" else ExternalRoleBackend(mailbox)
             providers = (roles, ExternalSearchProvider(mailbox), ExternalFetchProvider(mailbox))
         controller = Controller(store, contract, config.research.execution.fixture_dir, config.research.budget.max_external_calls, config.research.budget.pool_percentages, external_providers=providers,
             max_rounds=config.research.runtime.max_rounds, max_duration_seconds=config.research.budget.max_duration_seconds,
@@ -50,7 +56,8 @@ async def _execute(run_dir: Path, contract: ResearchContract, config: ResearchCo
             saturation_effective_rounds=config.research.stopping.saturation_effective_rounds,
             max_revision_cycles=config.research.stopping.max_revision_cycles,
             max_output_tokens=config.research.model.max_output_tokens,
-            api_model_name=config.research.model.model if config.research.model.backend == "chat_json" else None)
+            api_model_name=config.research.model.model if config.research.model.backend == "chat_json" else None,
+            research_config=config.research)
         heartbeat = asyncio.create_task(controller.heartbeat_loop())
         try:
             try:
@@ -176,7 +183,7 @@ def main(argv: list[str] | None = None) -> int:
             if config.research.execution.mode == "replay":
                 load(config.research.execution.fixture_dir / "fixture_manifest.json")
             if config.research.model.backend == "chat_json":
-                configured_backend(config.research.model)
+                _model_backend(config)
             run_dir = (args.runs_root / args.run_id).resolve()
             if run_dir.exists():
                 raise ValueError("run directory already exists")

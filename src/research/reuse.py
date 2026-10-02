@@ -23,7 +23,7 @@ MAX_NODES = 10000
 MAX_EDGES = 30000
 MAX_MANIFEST = 16 * 1024 * 1024
 MAX_ANCESTORS = 32
-ALLOWED_KINDS = {'source', 'snapshot', 'evidence', 'claim', 'audit', 'historical_audit', 'conflict', 'provenance', 'limitation'}
+ALLOWED_KINDS = {'source', 'snapshot', 'evidence', 'claim', 'audit', 'historical_audit', 'conflict', 'provenance', 'limitation', 'figure', 'document_map'}
 
 
 def entity(store, version_id):
@@ -135,8 +135,22 @@ def freeze_manifest(source, target, contract, selection):
                 queue.append(link['audit_version_id'])
                 edges.append(dict(link))
             text = source.read_blob(snap['payload']['text_hash']).decode('utf-8')
-            if not verify_locator(text, TextSpan.model_validate(p['locator']), p['excerpt']):
+            if p['locator']['kind'] == 'pdf_region':
+                from .visual_runtime import verify_visual_evidence
+                verify_visual_evidence(source, p)
+                queue.append(p['locator']['figure_version_id'])
+            elif not verify_locator(text, TextSpan.model_validate(p['locator']), p['excerpt']):
                 raise ReuseError('invalid_locator', vid)
+        elif item['kind'] == 'figure':
+            from .visual_models import FigureArtifact
+            artifact = FigureArtifact.model_validate(p['artifact'])
+            queue.append(p['document_map_version_id'])
+            for image in artifact.images:
+                blobs[image.blob_hash] = _verify_blob(source, image.blob_hash, target.run_dir.parent)
+        elif item['kind'] == 'document_map':
+            from .visual_models import DocumentMap
+            document = DocumentMap.model_validate(p['document'])
+            blobs[document.raw_hash] = _verify_blob(source, document.raw_hash, target.run_dir.parent)
         elif item['kind'] == 'snapshot':
             if p.get('validity') == 'invalidated':
                 raise ReuseError('integrity_error', 'invalidated snapshot')
@@ -152,7 +166,8 @@ def freeze_manifest(source, target, contract, selection):
                     queue.append(eid)
         # Only explicitly typed dependencies; arbitrary neighbours are not walked.
         for dep in source.db.execute('SELECT * FROM dependency_edges WHERE to_version_id=?', (vid,)):
-            if dep['reason'] in {'snapshot', 'evidence', 'claim', 'audit', 'context', 'limitation', 'provenance', 'conflict'}:
+            if dep['reason'] in {'snapshot', 'evidence', 'claim', 'audit', 'context', 'limitation', 'provenance', 'conflict',
+                                 'figure', 'document_map', 'visual_evidence', 'visual_audit'}:
                 queue.append(dep['from_version_id'])
                 edges.append(dict(dep))
         for row in conflicts:

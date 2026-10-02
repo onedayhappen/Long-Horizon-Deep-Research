@@ -13,6 +13,8 @@ from src.research.models import (
     ReportAudit,
     BudgetSnapshot, OutlineOperation, OutlineNode, OutlineState,
 )
+from src.research.visual_models import (DocumentMap, FigureArtifact, PDFRegion, VisualLocator, ReadFigure,
+    FigureReadPlan, VisualClaimProposal, VisualObservationProposal, VisualAudit, VisionProfile)
 
 
 MODELS = (ResearchConfig, ResearchContract, QuerySpec, SearchBatch, FetchRequest, FetchResult,
@@ -21,7 +23,9 @@ MODELS = (ResearchConfig, ResearchContract, QuerySpec, SearchBatch, FetchRequest
           QuestionSpaceAudit, SearchBiasVerdict, CandidateEvidenceBundle,
           EvidenceAuditVerdict, CounterAuditVerdict, CoverageProposal, DraftSection,
           ReportAudit, BudgetSnapshot, OutlineOperation, OutlineNode, OutlineState,
-          ReuseSelection, ReusePolicy, ReuseAssessment, ReuseMappingProposal, SourceValidationResult, InvalidationRequest)
+          ReuseSelection, ReusePolicy, ReuseAssessment, ReuseMappingProposal, SourceValidationResult, InvalidationRequest,
+          DocumentMap, FigureArtifact, PDFRegion, VisualLocator, ReadFigure, FigureReadPlan, VisualClaimProposal,
+          VisualObservationProposal, VisualAudit, VisionProfile)
 TARGET = Path(__file__).resolve().parents[1] / "src/research/schemas/v1"
 
 

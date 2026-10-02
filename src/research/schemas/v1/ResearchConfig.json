@@ -117,6 +117,18 @@
     "Extraction": {
       "additionalProperties": false,
       "properties": {
+        "max_input_bytes": {
+          "default": 8000000,
+          "exclusiveMinimum": 0,
+          "title": "Max Input Bytes",
+          "type": "integer"
+        },
+        "max_memory_bytes": {
+          "default": 536870912,
+          "exclusiveMinimum": 0,
+          "title": "Max Memory Bytes",
+          "type": "integer"
+        },
         "max_parse_seconds": {
           "default": 15,
           "exclusiveMinimum": 0,
@@ -133,6 +145,12 @@
           "default": 300000,
           "exclusiveMinimum": 0,
           "title": "Max Text Chars",
+          "type": "integer"
+        },
+        "max_total_render_bytes": {
+          "default": 50331648,
+          "exclusiveMinimum": 0,
+          "title": "Max Total Render Bytes",
           "type": "integer"
         },
         "max_windows_per_action": {
@@ -350,6 +368,9 @@
         },
         "stopping": {
           "$ref": "#/$defs/Stopping"
+        },
+        "visual": {
+          "$ref": "#/$defs/Visual"
         }
       },
       "required": [
@@ -445,6 +466,58 @@
         }
       },
       "title": "Stopping",
+      "type": "object"
+    },
+    "Visual": {
+      "additionalProperties": false,
+      "properties": {
+        "detail_dpi": {
+          "const": 300,
+          "default": 300,
+          "title": "Detail Dpi",
+          "type": "integer"
+        },
+        "dpi": {
+          "const": 150,
+          "default": 150,
+          "title": "Dpi",
+          "type": "integer"
+        },
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "max_figures_per_action": {
+          "default": 3,
+          "maximum": 3,
+          "minimum": 1,
+          "title": "Max Figures Per Action",
+          "type": "integer"
+        },
+        "max_image_bytes": {
+          "default": 8388608,
+          "exclusiveMinimum": 0,
+          "maximum": 8388608,
+          "title": "Max Image Bytes",
+          "type": "integer"
+        },
+        "max_image_pixels": {
+          "default": 6000000,
+          "exclusiveMinimum": 0,
+          "maximum": 6000000,
+          "title": "Max Image Pixels",
+          "type": "integer"
+        },
+        "max_images_per_figure": {
+          "default": 2,
+          "maximum": 6,
+          "minimum": 1,
+          "title": "Max Images Per Figure",
+          "type": "integer"
+        }
+      },
+      "title": "Visual",
       "type": "object"
     }
   },
