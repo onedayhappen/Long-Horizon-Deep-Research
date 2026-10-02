@@ -24,7 +24,7 @@ from .policy import QueryOutcome, challenge_satisfied, coverage_gates
 from .prompts import template as role_template
 from .replay import ReplayFetchProvider, ReplayRoleBackend, ReplaySearchProvider
 from .storage import Store
-from .outline import ordered_nodes
+from .outline import ordered_nodes, section_context
 from .loop import ResearchLoopMixin, ResearchStopped, ResearchReopened
 from .reuse_runtime import ReuseRuntimeMixin
 from .storage import now
@@ -371,6 +371,7 @@ class Controller(VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
                     key += ':material:' + digest(material)
                 feedback = self.head('audit','report')
                 packet = {"section_id": node.id, "section_name": section_name, "outline_version": outline.outline_version, "revision": revision,
+                    "section_context_json": canonical(section_context(outline, node)).decode(),
                     "node_json": node.model_dump_json(), "section_material_json": canonical(material).decode(), "claim_version_ids": sorted(allowed_claims)}
                 packet.update(writer_packet(self.store, outline, material, sections, contract, self.writing_config))
                 if revision:
@@ -479,6 +480,7 @@ class Controller(VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
         report_packet = {"report_hash": report_hash, "fact_ids": [f.id for _, s in sections for f in s.facts], "section_ids": [s.section_id for _, s in sections]}
         report_packet["report_markdown"] = report
         report_packet["sections_json"] = canonical([section.model_dump(mode="json") for _, section in sections]).decode()
+        report_packet["outline_json"] = outline.model_dump_json()
         report_packet["research_digest_json"] = canonical(self.research_digest()).decode()
         report_packet['writing_brief_json'] = canonical(brief).decode()
         report_packet['section_depth_json'] = canonical(depth_checks).decode()

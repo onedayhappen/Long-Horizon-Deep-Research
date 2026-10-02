@@ -414,7 +414,7 @@ class OutlineState(StrictModel):
 
 
 class OutlineOperation(StrictModel):
-    kind: Literal["add", "split", "merge", "move", "narrow_claim", "add_counterview", "mark_gap", "retire_node"]
+    kind: Literal["add", "split", "merge", "move", "narrow_claim", "bind_evidence", "add_counterview", "mark_gap", "retire_node"]
     node_id: str
     target_parent_id: str | None = None
     title: str | None = None

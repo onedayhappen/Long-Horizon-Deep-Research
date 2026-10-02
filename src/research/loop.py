@@ -9,7 +9,7 @@ from .jsonio import canonical, digest
 from .models import (InitializationProposal, OutlineState, OutlinePatchAction, CoverageAssessment,
                      QuestionSpaceAudit, ResearchAction, SearchAction, TerminateProposal)
 from .policy import coverage_gates
-from .outline import InvalidOutline, initialize_outline, apply_patch
+from .outline import InvalidOutline, initialize_outline, apply_patch, ordered_nodes, section_context, MAX_OUTLINE_DEPTH
 from .storage import now, stamp
 
 
@@ -84,13 +84,38 @@ class ResearchLoopMixin:
 
     def section_material(self, node):
         rows = self.evidence_rows()
-        allowed = {row['claim_ref']['version_id'] for rid in node.requirement_ids for row in rows[rid]}
+        selected = [row for rid in node.requirement_ids for row in rows[rid]]
         if node.claim_ids:
-            allowed &= {r['version_id'] for r in self.heads('claim') if r['id'] in node.claim_ids}
-        evidence_ids = {row['evidence_ref']['id'] for items in rows.values() for row in items if row['claim_ref']['version_id'] in allowed}
+            selected = [row for row in selected if row['claim_ref']['id'] in node.claim_ids]
+        if node.evidence_ids:
+            selected = [row for row in selected if row['evidence_ref']['id'] in node.evidence_ids]
+        allowed = {row['claim_ref']['version_id'] for row in selected}
+        evidence_ids = {row['evidence_ref']['id'] for row in selected}
         return {'claims': [r for r in self.heads('claim') if r['version_id'] in allowed],
                 'evidence': [r for r in self.heads('evidence') if r['id'] in evidence_ids],
                 'coverage': [r for r in self.heads('coverage') if r['id'] in node.requirement_ids]}
+
+    def outline_review(self, outline):
+        """Give planner and question audit the same audited basis for refinement.
+
+        Keep the full requirement pool visible even when a node is narrowly bound:
+        new evidence may warrant a sibling rather than expanding that node's scope.
+        """
+        claims = {r['version_id']: r for r in self.heads('claim')}
+        support = {}
+        for rid, rows in self.evidence_rows().items():
+            grouped = {}
+            for row in rows:
+                claim = claims[row['claim_ref']['version_id']]
+                item = grouped.setdefault(claim['id'], dict(claim_id=claim['id'],
+                    claim_version_id=claim['version_id'], text=claim['payload']['text'], evidence_ids=[]))
+                if row['evidence_ref']['id'] not in item['evidence_ids']:
+                    item['evidence_ids'].append(row['evidence_ref']['id'])
+            support[rid] = list(grouped.values())
+        return dict(max_depth=MAX_OUTLINE_DEPTH, supported_by_requirement=support,
+                    nodes=[dict(id=n.id, title=n.title, requirement_ids=n.requirement_ids,
+                                claim_ids=n.claim_ids, evidence_ids=n.evidence_ids,
+                                **section_context(outline, n)) for n in ordered_nodes(outline)])
 
     def evidence_rows(self):
         result = {r.id: [] for r in self.contract.requirements}
@@ -133,6 +158,7 @@ class ResearchLoopMixin:
     async def question_audit(self, outline):
         packet = {'question': self.contract.question, 'question_ids': outline.question_ids,
                   'outline_json': outline.model_dump_json(),
+                  'outline_review_json': canonical(self.outline_review(outline)).decode(),
                   'claim_summaries_json': canonical(self.heads('claim')).decode()}
         token = digest(packet)
         audit = await self.role('auditor.question_space', f'question-space:{token}', packet, QuestionSpaceAudit)
@@ -203,6 +229,7 @@ class ResearchLoopMixin:
                     assessments, assessment_refs, bias, gates = await self.assess(outline, question_audit)
                 packet = {'requirement_ids': requirements, 'question_ids': outline.question_ids,
                           'outline_json': outline.model_dump_json(), 'research_digest_json': canonical(self.planner_digest()).decode(),
+                          'outline_review_json': canonical(self.outline_review(outline)).decode(),
                           'coverage_json': canonical([a.model_dump(mode='json') for a in assessments]).decode(),
                           'coverage_refs': list(assessment_refs.values()), 'patch_reason_refs': sorted(self.patch_reasons(assessments, question_audit)),
                           'question_audit_json': question_audit.model_dump_json(), 'research_ready': bool(gates and gates.research_ready and not self.open_report_gaps()),

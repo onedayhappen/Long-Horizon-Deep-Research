@@ -8,6 +8,8 @@ from pathlib import Path
 
 from .jsonio import canonical
 from .storage import Store
+from .models import OutlineState
+from .outline import ordered_nodes, section_context
 
 
 def _write(path: Path, value: object) -> None:
@@ -70,6 +72,14 @@ def export_artifacts(store: Store) -> list[Path]:
     history = [dict(version=r['version'], version_id=r['version_id'], **json.loads(r['payload_json'])) for r in store.db.execute("SELECT * FROM entity_versions WHERE kind='outline' ORDER BY version")]
     outline = {'current': history[-1] if history else None, 'revision_count': max(0,len(history)-1), 'history': history}
     metadata['outline_version'] = history[-1].get('outline_version',history[-1]['version']) if history else None
+    if history:
+        current = OutlineState.model_validate({key: value for key, value in history[-1].items()
+                                              if key in OutlineState.model_fields})
+        nodes = ordered_nodes(current)
+        by_id = {section['section_id']: section for section in drafts}
+        metadata['sections'] = [by_id[node.id] for node in nodes if node.id in by_id]
+        metadata['section_hierarchy'] = [dict(section_id=node.id, parent_id=node.parent_id,
+            title=node.title, level=section_context(current, node)['level']) for node in nodes]
     if store.db.execute('SELECT 1 FROM reuse_imports LIMIT 1').fetchone():
         from .reuse import reuse_summary
         metadata['reuse_summary'] = reuse_summary(store)

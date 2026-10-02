@@ -24,7 +24,7 @@ Deep Research is an evidence based research and report workflow. Define a questi
 
 - **Research contract:** A JSON contract defines the question, scope, required answers, evidence checks, and report structure. TOML controls execution mode and budgets.
 - **Traceable evidence:** Source snapshots, text locations, claims, review decisions, and citation relationships are stored with the run.
-- **Iterative outline:** The research loop can investigate coverage gaps and revise the outline while retaining version history.
+- **Iterative outline:** Start with top-level questions, then develop evidence-backed second- and third-level sections as research uncovers distinct topics. Parents summarize; child sections explain scoped evidence and limits. See the [outline design](docs/research/outline.md).
 - **Report review:** Section and whole report checks can request targeted revisions or send a gap back to the research stage.
 - **Explicit reuse:** `--reuse-from` imports a frozen set of source materials into a new run. Candidates require purpose-specific time checks, document status validation and local audits. Imports recover after interruption; authorized ancestor invalidations are consumed before use.
 - **Resumable runs:** SQLite stores state, budgets, and events. Reports and evidence can be exported after a run.
