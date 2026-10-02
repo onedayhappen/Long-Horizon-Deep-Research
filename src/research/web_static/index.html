@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Deep Research 研究工作台：从研究问题到可追溯证据与报告。">
+  <title>Deep Research · 研究工作台</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/style.css">
+  <script src="/assets/app.js" defer></script>
+</head>
+<body>
+<svg class="icon-defs" aria-hidden="true"><defs>
+<symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+<symbol id="i-book" viewBox="0 0 24 24"><path d="M4 4h6l2 2 2-2h6v15h-6l-2 2-2-2H4zM12 6v15"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24"><path d="M5 3h9l5 5v13H5zM14 3v6h5M8 13h8M8 17h6"/></symbol>
+<symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h6m4 0h6M4 17h10m4 0h2"/><circle cx="12" cy="7" r="2"/><circle cx="16" cy="17" r="2"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="i-link" viewBox="0 0 24 24"><path d="m10 14 4-4M8 16l-1 1a4 4 0 0 1-6-6l4-4a4 4 0 0 1 6 0m2 1 1-1a4 4 0 0 1 6 6l-4 4a4 4 0 0 1-6 0"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24"><path d="m8 4 12 8-12 8z"/></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></symbol>
+<symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5M5 7a8 8 0 0 1 14-1l1 2M4 16l1 2a8 8 0 0 0 14-1"/></symbol>
+<symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+</defs></svg>
+<aside class="sidebar" id="sidebar">
+  <a class="brand" href="#workspace"><span class="brand-mark">D<span>r</span></span><span>Deep Research<small>证据驱动的研究空间</small></span></a>
+  <button class="button primary new-side" data-action="new"><svg><use href="#i-plus"/></svg>新建研究</button>
+  <div class="nav-label">工作空间</div>
+  <nav aria-label="主导航">
+    <button class="nav-item active" data-view="workspace"><svg><use href="#i-grid"/></svg>研究工作台</button>
+    <button class="nav-item" data-view="research"><svg><use href="#i-search"/></svg>全部研究<span id="nav-count" class="nav-count">0</span></button>
+    <button class="nav-item" data-view="evidence"><svg><use href="#i-book"/></svg>证据资料库</button>
+    <button class="nav-item" data-view="reports"><svg><use href="#i-file"/></svg>研究报告</button>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="local-card"><svg><use href="#i-link"/></svg><b>本地研究空间</b><p>资料与运行状态保存在你的设备中。</p></div>
+    <button class="nav-item" data-view="settings"><svg><use href="#i-sliders"/></svg>模型与设置</button>
+    <div class="profile"><span class="avatar">研</span><span>我的研究空间<small>Local workspace</small></span><span class="version">v0.1</span></div>
+  </div>
+</aside>
+<div class="shell">
+  <header class="topbar"><div><button class="icon-button mobile-menu" id="menu" aria-label="展开导航"><svg><use href="#i-menu"/></svg></button><span class="breadcrumb">工作空间 <span>/</span> <strong id="crumb">研究工作台</strong></span></div><div class="header-right"><span class="local-tag">本地运行</span><span class="avatar small">研</span></div></header>
+  <main id="main" tabindex="-1"><div class="loading">正在读取研究空间…</div></main>
+  <footer>DEEP RESEARCH <span>从问题出发，让结论有据可循。</span><a href="https://github.com/AnnaSuSu/TechSpar" target="_blank" rel="noopener noreferrer">界面灵感 · TechSpar</a></footer>
+</div>
+<dialog id="new-dialog" aria-labelledby="new-title">
+  <form id="new-form">
+    <div class="dialog-top"><span class="eyebrow">NEW RESEARCH</span><button class="icon-button" type="button" data-action="close-dialog" aria-label="关闭"><svg><use href="#i-close"/></svg></button></div>
+    <h2 id="new-title">开始一项新的研究</h2><p class="muted">明确问题和边界，建立可追溯的证据链。</p>
+    <label for="question">你想研究什么？<span class="required">*</span></label><textarea id="question" name="question" rows="3" minlength="5" maxlength="3000" required placeholder="例如：比较 RAG 与长上下文方案在企业知识问答中的适用边界"></textarea>
+    <label for="requirements">必答问题 <small>每行一项，可留空</small></label><textarea id="requirements" name="requirements" rows="3" placeholder="两种方案的准确率和成本如何比较？&#10;哪些条件下应该选择混合方案？"></textarea>
+    <label for="scope">研究范围 <small>版本、时间、资料类型或排除内容</small></label><input id="scope" name="scope" maxlength="4000" placeholder="例如：优先官方文档与公开论文，排除未经核实的营销数据">
+    <div class="field-row"><div><label for="max-calls">调用预算</label><select name="max_calls" id="max-calls"><option value="60">60 次 · 轻量研究</option><option value="120" selected>120 次 · 标准研究</option><option value="240">240 次 · 深度研究</option></select></div><div><label for="max-minutes">运行时限</label><select name="max_minutes" id="max-minutes"><option value="30">30 分钟</option><option value="60" selected>60 分钟</option><option value="120">120 分钟</option></select></div></div>
+    <details class="advanced"><summary>高级：导入完整研究合约</summary><p class="muted">导入后将使用合约中的问题、需求和验收规则。</p><input type="file" id="contract-file" accept=".json,application/json"><span id="contract-note"></span></details>
+    <div class="notice">AI 负责规划、分析和报告写作；搜索结果与网页快照仍需在「待处理请求」中提交。</div>
+    <div class="form-error" id="create-error" role="alert"></div><div class="dialog-actions"><button class="button" type="button" data-action="close-dialog">取消</button><button class="button primary" id="create-submit" type="submit"><svg><use href="#i-spark"/></svg>创建并开始研究</button></div>
+  </form>
+</dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+</body></html>

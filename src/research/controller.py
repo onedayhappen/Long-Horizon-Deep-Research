@@ -68,9 +68,10 @@ class Controller(VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
         self.budget = BudgetManager(store, max_calls, pools)
         self.owner = str(uuid.uuid4())
         self.generation = store.acquire(self.owner)
-        from .config import Visual, Extraction
+        from .config import Visual, Extraction, Writing
         self.visual_config = research_config.visual if research_config else Visual()
         self.extraction_config = research_config.extraction if research_config else Extraction()
+        self.writing_config = getattr(research_config, 'writing', Writing())
 
     def close(self) -> None:
         self.tick(enforce=False)
@@ -130,7 +131,8 @@ class Controller(VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
         else:
             template = f"{role}.v1"
             template_hash = digest(role_template(role))
-            request = RoleRequest(role=role, logical_action_key=action_key, input_manifest_hash=manifest_hash, contract_version=self.contract.version, policy_version=1, system_template_id=template, system_template_hash=template_hash, data_packet=packet, response_schema_id=getattr(result_type, "__name__", "ResearchAction"), response_schema_version=1, max_output_tokens=self.max_output_tokens, images=images)
+            output_tokens = packet.get('writing_max_output_tokens', self.max_output_tokens) if role == 'writer.section' else self.max_output_tokens
+            request = RoleRequest(role=role, logical_action_key=action_key, input_manifest_hash=manifest_hash, contract_version=self.contract.version, policy_version=1, system_template_id=template, system_template_hash=template_hash, data_packet=packet, response_schema_id=getattr(result_type, "__name__", "ResearchAction"), response_schema_version=1, max_output_tokens=output_tokens, images=images)
             attempt = self.budget.reserve(action_id, "role", manifest_hash, "report_audit" if role == "auditor.report" else "writing" if role == "writer.section" else "research", self.owner, self.generation)
             response = None
             try:
@@ -343,6 +345,7 @@ class Controller(VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
         return assessments, assessment_refs, bias, gates
 
     async def write_report(self, outline: OutlineState, assessments, assessment_refs) -> str:
+        from .writing import writer_packet, writing_brief, depth_status
         contract = self.contract
         freeze = self.head('freeze','outline')['payload']
         if freeze['outline_version'] != outline.outline_version or set(freeze['coverage_refs']) != set(assessment_refs.values()):
@@ -350,7 +353,10 @@ class Controller(VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
         evidence_by_requirement = self.evidence_rows()
         self.phase("writing")
         sections = []
-        for index, node in enumerate(ordered_nodes(outline)):
+        depth_checks = []
+        nodes_in_order = ordered_nodes(outline)
+        brief = writing_brief(outline, contract, self.writing_config)
+        for index, node in enumerate(nodes_in_order):
             section_name = node.title
             revision = self.store.db.execute('SELECT COALESCE(MAX(revision),0) FROM revision_jobs WHERE section_id=? AND contract_version=?', (node.id,contract.version)).fetchone()[0]
             material = self.section_material(node)
@@ -366,9 +372,31 @@ class Controller(VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
                 feedback = self.head('audit','report')
                 packet = {"section_id": node.id, "section_name": section_name, "outline_version": outline.outline_version, "revision": revision,
                     "node_json": node.model_dump_json(), "section_material_json": canonical(material).decode(), "claim_version_ids": sorted(allowed_claims)}
+                packet.update(writer_packet(self.store, outline, material, sections, contract, self.writing_config))
                 if revision:
                     packet['report_feedback_json'] = canonical(feedback['payload'] if feedback else {}).decode()
+                    if previous:
+                        packet['previous_draft_json'] = canonical(previous['payload']).decode()
                 section = await self.role("writer.section", key, packet, DraftSection)
+                for expansion in range(self.writing_config.max_expansion_rounds):
+                    status = depth_status(section, material, brief['target_characters'])
+                    if not status['needs_expansion']:
+                        break
+                    # Leave a first-draft call for each unfinished later section.
+                    pending = 0
+                    for later in nodes_in_order[index + 1:]:
+                        draft = self.head('draft', later.id)
+                        needed_revision = self.store.db.execute('SELECT COALESCE(MAX(revision),0) FROM revision_jobs WHERE section_id=? AND contract_version=?', (later.id, contract.version)).fetchone()[0]
+                        if not draft or draft['payload']['outline_version'] != outline.outline_version or draft['payload']['revision'] != needed_revision:
+                            pending += 1
+                    expansion_key = key + f':expand:{expansion + 1}'
+                    cached = self.store.db.execute('SELECT result_json FROM actions WHERE action_id=?', ('role:' + expansion_key,)).fetchone()
+                    if not (cached and cached['result_json']) and self.budget.snapshot()['remaining']['writing'] <= pending:
+                        break
+                    expansion_packet = dict(packet,
+                        previous_draft_json=section.model_dump_json(),
+                        expansion_feedback_json=canonical(status).decode())
+                    section = await self.role('writer.section', expansion_key, expansion_packet, DraftSection)
             if section.section_id != node.id or section.outline_version != outline.outline_version or section.revision != revision:
                 raise RuntimeError("writer section mismatch")
             for fact in section.facts:
@@ -384,6 +412,7 @@ class Controller(VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
                 draft_key += ':' + digest(section.model_dump(mode='json'))
             self.commit(draft_key, section.model_dump(mode="json"), [("draft", section.section_id, section.model_dump(mode="json"))])
             sections.append((section_name, section))
+            depth_checks.append(depth_status(section, material, brief['target_characters']))
         valid_claim_ids = {str(r["claim_ref"]["version_id"]) for rows in evidence_by_requirement.values() for r in rows if r["qualified"]}
         valid_evidence_ids = {str(r["evidence_ref"]["id"]) for rows in evidence_by_requirement.values() for r in rows if r["qualified"]}
         for _, section in sections:
@@ -451,6 +480,8 @@ class Controller(VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
         report_packet["report_markdown"] = report
         report_packet["sections_json"] = canonical([section.model_dump(mode="json") for _, section in sections]).decode()
         report_packet["research_digest_json"] = canonical(self.research_digest()).decode()
+        report_packet['writing_brief_json'] = canonical(brief).decode()
+        report_packet['section_depth_json'] = canonical(depth_checks).decode()
         revision_manifest = digest([(s.section_id,s.revision) for _,s in sections])
         audit_key = f"report:{outline.outline_version}:{revision_manifest}"
         if self.store.db.execute('SELECT 1 FROM reuse_imports LIMIT 1').fetchone():

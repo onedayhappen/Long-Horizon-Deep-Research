@@ -28,6 +28,24 @@ python -m pip install -e ".[research,test]"
 
 ## 快速体验：离线回放
 
+### 网页研究工作台
+
+在项目根目录启动：
+
+```powershell
+python -m src research web --runs-root research-runs --port 8765
+```
+
+浏览器打开 [http://127.0.0.1:8765](http://127.0.0.1:8765)。工作台直接读取指定运行目录，支持新建研究、查看进度与待处理请求、浏览证据和报告、下载产物，以及恢复研究。前端随 Python 包提供，无需 Node.js 或前端构建。
+
+在「模型与设置」中选择 DeepSeek 或硅基流动，填写模型名和 API Key；也可在启动前设置 `DEEPSEEK_API_KEY` 或 `SILICONFLOW_API_KEY`。网页填写的密钥仅保留在服务进程内存中，不写入运行配置。测试连接会产生一次真实 API 调用。停止网页服务会停止它启动的研究进程，状态保留在 SQLite 中，之后可恢复；如租约尚未到期，需稍后再恢复。
+
+网页沿用现有 `assisted` 引擎：模型负责规划、分析、审核和写作，搜索与网页抓取仍需通过辅助通道提交。「待处理请求」可下载请求并提交包含 `input_hash`、`producer`、`result` 的响应信封；网页快照可附加 `snapshot_text`，其 UTF-8 字节的 SHA-256 必须匹配 `blob_hash`。也可继续使用 `scripts/research_assistant.py`。
+
+服务仅监听本机，不是公网托管服务。首页的「运行离线样例」无需密钥，用于验证完整流程，资料是虚构样例。
+
+### 命令行离线回放
+
 仓库提供虚构资料的测试样例。它用于验证完整流程，**不代表真实联网研究结论**。
 
 ```bash
@@ -69,6 +87,25 @@ python scripts/research_assistant.py research-runs/my-study --response response.
 ```
 
 `assisted` 需要外部会话持续处理请求；单独执行 `run` 不会自动获得模型或搜索结果。抓取资料的原始字节与响应哈希也要按请求要求保存。
+
+## 长报告写作
+
+Writer 参考 [WebWeaver 的逐节检索与写作流程](https://arxiv.org/html/2509.13312v2#S3.SS3)：按冻结大纲逐节读取已审核证据及其附近的本地原文，保留有限前文用于衔接，每节使用新的上下文。原文邻近内容和前文不能直接充当新增事实的依据。
+
+可在 TOML 中配置（以下为默认值）：
+
+```toml
+[research.writing]
+max_output_tokens = 8192
+target_section_characters = 1800
+previous_context_characters = 2400
+source_context_characters = 12000
+max_expansion_rounds = 1
+```
+
+写作 token 上限独立于 `research.model.max_output_tokens`，需适配所用模型的输出限制。章节目标统计正文字符，会按合约总长度与输出额度缩小；它是软目标，证据稀少或问题简单时可以短写。至少有 3 条主张却不足目标一半的章节，在预算允许时最多补写一次；补写保留后续未完成章节的首次写作调用。更多章节或修订需要相应增加 `research.budget` 的写作池（`pool_percentages` 第二项）。
+
+报告审计同时检查论述深度、重复和遗漏：已有证据未展开时退回章节修订；必要解释缺证据时退回研究。最终仍检查事实引用与合约总长度。离线样例使用预先编写的虚构短文，验证执行流程，不代表真实模型的长文质量。
 
 ## 查看与恢复
 

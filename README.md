@@ -1,5 +1,19 @@
 # Deep Research
 
+## Local web workbench
+
+Run `python -m src research web --runs-root research-runs --port 8765`, then open
+[http://127.0.0.1:8765](http://127.0.0.1:8765). The bundled interface supports creating
+research, viewing progress, evidence and reports, responding to assistant mailbox
+requests, downloading artifacts, and resuming runs. No frontend build is required.
+Configure DeepSeek or SiliconFlow in **模型与设置**, or set `DEEPSEEK_API_KEY` /
+`SILICONFLOW_API_KEY` before starting. Keys entered in the browser remain in server
+memory only. Connection tests make one billable model request. The interface uses
+the existing assisted engine: search and fetch still require external responses.
+The server binds to loopback only. Shutting it down stops its child runs; saved
+state remains resumable after their leases expire. The offline demo uses fictional
+fixtures and requires a source checkout.
+
 [简体中文](README.zh-CN.md)
 
 Deep Research is an evidence based research and report workflow. Define a question, scope, and acceptance criteria; the system records source snapshots, checks claims and requirement coverage, and produces a report with traceable citations. Run state is stored locally so work can be inspected, exported, and resumed.
@@ -94,6 +108,25 @@ A run directory typically contains:
 | `blobs/`, `bridge/` | Source snapshots and assisted request/response exchange |
 
 Run directories can contain source text, model output, and other sensitive material. They are excluded from Git by default.
+
+## Long-form writing
+
+The writer follows [WebWeaver's section-wise retrieval and writing approach](https://arxiv.org/html/2509.13312v2#S3.SS3). Each section receives the frozen outline, audited evidence, bounded local source context, and a bounded excerpt of preceding prose. Source context and previous prose do not authorize additional factual claims.
+
+Optional TOML settings (defaults shown):
+
+```toml
+[research.writing]
+max_output_tokens = 8192
+target_section_characters = 1800
+previous_context_characters = 2400
+source_context_characters = 12000
+max_expansion_rounds = 1
+```
+
+The writing token limit overrides `research.model.max_output_tokens` for writer calls; configure it for your provider. Body-character targets shrink to fit the contract and output allowance and are soft, so sparse evidence never requires padding. Sections with at least three supported claims but less than half their target receive at most one expansion by default, preserving first-draft calls for unfinished later sections. Increase the writing call pool (the second `research.budget.pool_percentages` entry) for larger outlines or more revisions.
+
+Report review checks explanatory depth, repetition and omissions as well as factual support. It can request a section rewrite or reopen research for required missing evidence. Citation and final contract-length checks still apply. Fictional replay fixtures verify execution, not live model writing quality.
 
 ## Implementation status
 

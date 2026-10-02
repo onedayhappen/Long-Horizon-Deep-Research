@@ -371,6 +371,9 @@
         },
         "visual": {
           "$ref": "#/$defs/Visual"
+        },
+        "writing": {
+          "$ref": "#/$defs/Writing"
         }
       },
       "required": [
@@ -518,6 +521,44 @@
         }
       },
       "title": "Visual",
+      "type": "object"
+    },
+    "Writing": {
+      "additionalProperties": false,
+      "properties": {
+        "max_expansion_rounds": {
+          "default": 1,
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Max Expansion Rounds",
+          "type": "integer"
+        },
+        "max_output_tokens": {
+          "default": 8192,
+          "exclusiveMinimum": 0,
+          "title": "Max Output Tokens",
+          "type": "integer"
+        },
+        "previous_context_characters": {
+          "default": 2400,
+          "minimum": 0,
+          "title": "Previous Context Characters",
+          "type": "integer"
+        },
+        "source_context_characters": {
+          "default": 12000,
+          "minimum": 0,
+          "title": "Source Context Characters",
+          "type": "integer"
+        },
+        "target_section_characters": {
+          "default": 1800,
+          "exclusiveMinimum": 0,
+          "title": "Target Section Characters",
+          "type": "integer"
+        }
+      },
+      "title": "Writing",
       "type": "object"
     }
   },

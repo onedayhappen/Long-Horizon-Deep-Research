@@ -99,6 +99,14 @@ class Stopping(StrictModel):
     human_review_deadline_seconds: int = Field(default=86400, gt=0)
 
 
+class Writing(StrictModel):
+    max_output_tokens: int = Field(default=8192, gt=0)
+    target_section_characters: int = Field(default=1800, gt=0)
+    previous_context_characters: int = Field(default=2400, ge=0)
+    source_context_characters: int = Field(default=12000, ge=0)
+    max_expansion_rounds: int = Field(default=1, ge=0, le=2)
+
+
 class Research(StrictModel):
     execution: Execution
     runtime: Runtime = Field(default_factory=Runtime)
@@ -109,6 +117,7 @@ class Research(StrictModel):
     extraction: Extraction = Field(default_factory=Extraction)
     audit: Audit = Field(default_factory=Audit)
     stopping: Stopping = Field(default_factory=Stopping)
+    writing: Writing = Field(default_factory=Writing)
     visual: "Visual" = Field(default_factory=lambda: Visual())
 
 

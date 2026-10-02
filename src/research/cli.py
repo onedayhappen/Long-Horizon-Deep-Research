@@ -112,6 +112,9 @@ async def _execute(run_dir: Path, contract: ResearchContract, config: ResearchCo
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="lh-harness research")
     sub = parser.add_subparsers(dest="command", required=True)
+    web = sub.add_parser("web", help="Open the local research workbench")
+    web.add_argument("--runs-root", type=Path, default=Path("research-runs"))
+    web.add_argument("--port", type=int, default=8765)
     validate = sub.add_parser("validate", help="Validate a complete research contract and configuration")
     validate.add_argument("--contract", type=Path, required=True)
     validate.add_argument("--config", type=Path, required=True)
@@ -144,6 +147,9 @@ def main(argv: list[str] | None = None) -> int:
     invalidate.add_argument('--decision', type=Path, required=True)
     args = parser.parse_args(argv)
     try:
+        if args.command == "web":
+            from .web import serve
+            return serve(args.runs_root, args.port)
         if args.command == "model-check":
             from .models import InitializationProposal, RoleRequest
             from .prompts import template
