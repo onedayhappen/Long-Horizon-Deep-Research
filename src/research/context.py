@@ -12,7 +12,7 @@ class ContextBuilder:
         # Callers construct role-specific data packets from committed state. The
         # packet stores the exact data sent, not a second LLM-written summary.
         data = request.data_packet
-        if request.role in {'auditor.evidence', 'auditor.counter_entailment'}:
+        if request.role in {'auditor.evidence', 'auditor.counter_entailment', 'auditor.visual', 'auditor.visual_counter'}:
             prohibited = {'historical_audit', 'historical_verdict', 'research_digest_json', 'budget_json', 'conversation', 'messages'}
             if prohibited.intersection(data):
                 raise ValueError('independent evidence review received prohibited history')
@@ -21,7 +21,8 @@ class ContextBuilder:
                     contract_version=request.contract_version, input_manifest_hash=request.input_manifest_hash,
                     selected_refs={key: value for key, value in data.items() if key.endswith(('_ids', '_refs', '_version_id'))},
                     omitted_refs=[], data_packet=data, context_budget={'max_output_tokens': request.max_output_tokens},
-                    system_template_hash=request.system_template_hash)
+                    system_template_hash=request.system_template_hash,
+                    image_manifest=[image.model_dump(exclude={'data_base64'}) for image in request.images])
 
     @classmethod
     def save(cls, store, request, attempt_id, owner, generation):

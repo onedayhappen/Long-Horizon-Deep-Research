@@ -116,6 +116,7 @@
         "complete",
         "complete_with_limitations",
         "incomplete_budget",
+        "incomplete_context",
         "incomplete_plateau",
         "incomplete_no_progress",
         "incomplete_report_audit_loop",

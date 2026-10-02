@@ -1,0 +1,40 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "checked_claim_version_ids": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 2,
+      "minItems": 2,
+      "title": "Checked Claim Version Ids",
+      "type": "array"
+    },
+    "original_claims_scoped": {
+      "title": "Original Claims Scoped",
+      "type": "boolean"
+    },
+    "reason": {
+      "minLength": 1,
+      "title": "Reason",
+      "type": "string"
+    },
+    "verdict": {
+      "enum": [
+        "accept",
+        "reject",
+        "uncertain"
+      ],
+      "title": "Verdict",
+      "type": "string"
+    }
+  },
+  "required": [
+    "checked_claim_version_ids",
+    "verdict",
+    "original_claims_scoped",
+    "reason"
+  ],
+  "title": "ConflictVerification",
+  "type": "object"
+}

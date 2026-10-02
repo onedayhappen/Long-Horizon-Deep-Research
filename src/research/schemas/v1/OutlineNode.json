@@ -20,6 +20,13 @@
       "title": "Evidence Ids",
       "type": "array"
     },
+    "gap_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Gap Ids",
+      "type": "array"
+    },
     "id": {
       "minLength": 1,
       "title": "Id",
@@ -32,6 +39,12 @@
       "title": "Notes",
       "type": "array"
     },
+    "order": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Order",
+      "type": "integer"
+    },
     "parent_id": {
       "anyOf": [
         {
@@ -43,6 +56,11 @@
       ],
       "default": null,
       "title": "Parent Id"
+    },
+    "purpose": {
+      "default": "",
+      "title": "Purpose",
+      "type": "string"
     },
     "replaced_by": {
       "items": {
@@ -58,6 +76,11 @@
       "minItems": 1,
       "title": "Requirement Ids",
       "type": "array"
+    },
+    "research_question": {
+      "default": "",
+      "title": "Research Question",
+      "type": "string"
     },
     "title": {
       "minLength": 1,

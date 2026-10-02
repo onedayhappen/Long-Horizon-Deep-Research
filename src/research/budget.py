@@ -16,6 +16,7 @@ class BudgetManager:
     def __init__(self, store: Store, max_calls: int, pool_percentages: list[int]):
         self.store = store
         self.action_scope: tuple[str,int] | None = None
+        self.exploration_floor = 0
         self.limits = {
             "research": max_calls * pool_percentages[0] // 100,
             "writing": max_calls * pool_percentages[1] // 100,
@@ -36,6 +37,8 @@ class BudgetManager:
             used = db.execute("SELECT COUNT(*) FROM budget_reservations WHERE pool=? AND status!='released'", (pool,)).fetchone()[0]
             if used >= self.limits[pool]:
                 raise BudgetDenied("budget_denied")
+            if pool == 'research' and self.action_scope and used >= self.limits[pool] - self.exploration_floor:
+                raise BudgetDenied('research_closing_reserve')
             db.execute("INSERT OR IGNORE INTO actions(action_id,kind,state,input_manifest_hash) VALUES(?,?,?,?)", (action_id, kind, "planned", input_manifest_hash))
             attempt_no = db.execute("SELECT COALESCE(MAX(attempt_no),0)+1 FROM attempts WHERE action_id=?", (action_id,)).fetchone()[0]
             db.execute("INSERT INTO attempts VALUES(?,?,?,?,?,?)", (attempt_id, action_id, attempt_no, "running", None, None))

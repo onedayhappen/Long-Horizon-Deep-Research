@@ -49,6 +49,10 @@ def reindex(root):
                 value = original[(role,'write:'+action.split(':')[-1])]
             elif role == 'auditor.report':
                 value = original[(role,'report')]
+            elif role == 'auditor.outline':
+                from scripts.research_review_fixture import outline_review_response
+                value = dict(original[('auditor.report','report')])
+                value['raw_text'] = canonical(outline_review_response(request.data_packet)).decode()
             else:
                 value = original[(role,action)]
             key = f'{role}|{action}|{request.input_manifest_hash}'
@@ -58,6 +62,7 @@ def reindex(root):
             return RoleResponse.model_validate(value)
 
     from src.research.budget import BudgetDenied
+    from src.research.loop import ResearchStopped
     for calls, fail_once in [(120,False),(120,True),(10,False)]:
         with tempfile.TemporaryDirectory() as directory:
             store = Store(Path(directory), namespace_seed=manifest['namespace_seed'])
@@ -69,6 +74,9 @@ def reindex(root):
                     asyncio.run(controller.run())
                 except BudgetDenied:
                     if calls != 10:
+                        raise
+                except ResearchStopped as exc:
+                    if calls != 10 or exc.outcome != 'incomplete_budget':
                         raise
                 except RuntimeError as exc:
                     if str(exc) != 'fixture builder simulates one missing audit response':

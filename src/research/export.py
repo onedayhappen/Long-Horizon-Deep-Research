@@ -59,14 +59,21 @@ def export_artifacts(store: Store) -> list[Path]:
         snapshot = store.db.execute("SELECT payload_json FROM entity_versions WHERE kind='snapshot' AND id=? ORDER BY version DESC LIMIT 1", (item["snapshot_id"],)).fetchone()
         item["id"] = row["id"]
         item["snapshot"] = json.loads(snapshot[0]) if snapshot else None
+        if item['locator']['kind'] == 'pdf_region':
+            from .visual_runtime import verify_visual_evidence
+            artifact, _ = verify_visual_evidence(store, item)
+            item['figure'] = artifact.model_dump()
         evidence.append(item)
     coverage = [json.loads(row["payload_json"]) for row in store.db.execute("SELECT v.payload_json FROM entity_versions v JOIN entity_heads h ON v.kind=h.kind AND v.id=h.id AND v.version=h.version WHERE v.kind='coverage' ORDER BY v.id")]
     conflicts = [json.loads(row["payload_json"]) for row in store.db.execute("SELECT payload_json FROM entity_versions WHERE kind='conflict' ORDER BY id,version")]
-    citations = sorted({evidence_id for draft in drafts for fact in draft["facts"] if fact["kind"] == "factual" for evidence_id in fact["evidence_ids"]})
+    citations = sorted({evidence_id for draft in drafts for fact in draft["facts"] if fact["kind"] in {"factual", "dispute"} for evidence_id in fact["evidence_ids"]})
     metadata = {"schema_version": 1, "run_id": run["run_id"], "outcome": run["research_outcome"], "report_hash": report_hash, "stop_version_id": run["current_stop_version_id"], "citation_evidence_ids": citations, "sections": drafts}
     paths = []
     history = [dict(version=r['version'], version_id=r['version_id'], **json.loads(r['payload_json'])) for r in store.db.execute("SELECT * FROM entity_versions WHERE kind='outline' ORDER BY version")]
     outline = {'current': history[-1] if history else None, 'revision_count': max(0,len(history)-1), 'history': history}
+    for kind in ('research_progress', 'investigation', 'research_summary', 'gap_review', 'outline_review'):
+        outline[kind] = [dict(id=r['id'], **json.loads(r['payload_json'])) for r in store.db.execute(
+            "SELECT v.* FROM entity_versions v JOIN entity_heads h ON v.kind=h.kind AND v.id=h.id AND v.version=h.version WHERE v.kind=? AND h.validity='current' ORDER BY v.id", (kind,))]
     metadata['outline_version'] = history[-1].get('outline_version',history[-1]['version']) if history else None
     if history:
         current = OutlineState.model_validate({key: value for key, value in history[-1].items()

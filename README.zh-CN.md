@@ -8,9 +8,10 @@
 
 ## 能做什么
 
+- **证据冲突：** 跨来源比较保留双方证据，阻止未决争议被写成确定事实，并支持契约明确允许的争议报告。见[处理方案与边界](docs/research/evidence-conflicts.md)。
 - **明确研究边界**：用 JSON 合约定义问题、版本范围、必答需求、证据要求和报告结构；用 TOML 配置运行方式与预算。
 - **追踪证据**：保存来源快照、原文定位、主张、审核结果及引用关系。报告中的事实可回查到本地保存的资料。
-- **迭代研究与大纲**：从一级问题骨架开始，根据检索资料中的实质子主题逐步添加二、三级标题；父章节概述，子章节按绑定证据展开论述与限制，并保留版本历史。详见[大纲设计](docs/research/outline.md)。
+- **迭代研究与大纲**：从一级问题骨架开始，按资料逐步细化子章节；章节缺口驱动定向检索，经审核关闭后才能完成。支持同级排序、研究摘要、上下文上限及写作前全纲检查，并保留版本历史。详见[大纲设计](docs/research/outline.md)。
 - **审核报告**：对章节和完整报告执行检查；需要补证时退回研究阶段，局部问题只修订相关章节。
 - **保存与恢复**：以 SQLite 保存运行状态、预算和事件，支持中断后继续，并导出报告、证据和覆盖结果。
 - **显式复用旧研究**：用 `--reuse-from` 导入同一 runs-root 的来源资料；按新契约选证、复核来源和双向审核。支持可恢复导入、来源谱系失效同步和历史报告回查。
@@ -27,6 +28,24 @@ python -m pip install -e ".[research,test]"
 当前命令入口为 `lh-harness research`，也可以通过 `python -m src research` 调用。下文使用后一种写法，便于在源码目录直接运行。
 
 ## 快速体验：离线回放
+
+### 网页研究工作台
+
+在项目根目录启动：
+
+```powershell
+python -m src research web --runs-root research-runs --port 8765
+```
+
+浏览器打开 [http://127.0.0.1:8765](http://127.0.0.1:8765)。工作台直接读取指定运行目录，支持新建研究、查看进度与待处理请求、浏览证据和报告、下载产物，以及恢复研究。前端随 Python 包提供，无需 Node.js 或前端构建。
+
+在「模型与设置」中选择 DeepSeek 或硅基流动，填写模型名和 API Key；也可在启动前设置 `DEEPSEEK_API_KEY` 或 `SILICONFLOW_API_KEY`。网页填写的密钥仅保留在服务进程内存中，不写入运行配置。测试连接会产生一次真实 API 调用。停止网页服务会停止它启动的研究进程，状态保留在 SQLite 中，之后可恢复；如租约尚未到期，需稍后再恢复。
+
+网页沿用现有 `assisted` 引擎：模型负责规划、分析、审核和写作，搜索与网页抓取仍需通过辅助通道提交。「待处理请求」可下载请求并提交包含 `input_hash`、`producer`、`result` 的响应信封；网页快照可附加 `snapshot_text`，其 UTF-8 字节的 SHA-256 必须匹配 `blob_hash`。也可继续使用 `scripts/research_assistant.py`。
+
+服务仅监听本机，不是公网托管服务。首页的「运行离线样例」无需密钥，用于验证完整流程，资料是虚构样例。
+
+### 命令行离线回放
 
 仓库提供虚构资料的测试样例。它用于验证完整流程，**不代表真实联网研究结论**。
 
@@ -69,6 +88,38 @@ python scripts/research_assistant.py research-runs/my-study --response response.
 ```
 
 `assisted` 需要外部会话持续处理请求；单独执行 `run` 不会自动获得模型或搜索结果。抓取资料的原始字节与响应哈希也要按请求要求保存。
+
+## 长报告写作
+
+大纲规划可单独配置（默认值如下）。层级上限是保护边界，通常按证据需要展开二、三级，不要求凑满层级。
+
+```toml
+[research.planning]
+max_depth = 4
+context_characters = 48000
+summary_characters = 2400
+max_sources_per_action = 5
+closing_reserve_calls = 4
+```
+
+规划器读取完整大纲、已审核主张索引和有额度限制的研究摘要；省略的摘要保留 ID，可按需调取。字符预算不是模型 token 上限，需按模型上下文调整；必要信息超限时以 `incomplete_context` 停止，不截掉缺口或强行完成。同一 run 默认复用相同 URL 的抓取结果；新研究目标重新提取，`refresh_sources=true` 强制刷新抓取。研究调用池为收尾检查保留额度，写作前另检查剩余写作调用数。
+
+Writer 参考 [WebWeaver 的逐节检索与写作流程](https://arxiv.org/html/2509.13312v2#S3.SS3)：按冻结大纲逐节读取已审核证据及其附近的本地原文，保留有限前文用于衔接，每节使用新的上下文。原文邻近内容和前文不能直接充当新增事实的依据。
+
+可在 TOML 中配置（以下为默认值）：
+
+```toml
+[research.writing]
+max_output_tokens = 8192
+target_section_characters = 1800
+previous_context_characters = 2400
+source_context_characters = 12000
+max_expansion_rounds = 1
+```
+
+写作 token 上限独立于 `research.model.max_output_tokens`，需适配所用模型的输出限制。章节目标统计正文字符，会按合约总长度与输出额度缩小；它是软目标，证据稀少或问题简单时可以短写。至少有 3 条主张却不足目标一半的章节，在预算允许时最多补写一次；补写保留后续未完成章节的首次写作调用。更多章节或修订需要相应增加 `research.budget` 的写作池（`pool_percentages` 第二项）。
+
+报告审计同时检查论述深度、重复和遗漏：已有证据未展开时退回章节修订；必要解释缺证据时退回研究。最终仍检查事实引用与合约总长度。离线样例使用预先编写的虚构短文，验证执行流程，不代表真实模型的长文质量。
 
 ## 查看与恢复
 

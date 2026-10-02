@@ -5,7 +5,7 @@ from decimal import Decimal
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator, field_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator, field_validator, model_serializer
 
 
 class StrictModel(BaseModel):
@@ -150,6 +150,14 @@ class Requirement(StrictModel):
     allow_unknown: bool
     unknown_check_ids: list[str]
     acceptance_checks: list[AcceptanceCheck] = Field(min_length=2)
+    answer_mode: Literal['resolve_fact', 'compare_evidence'] = 'resolve_fact'
+
+    @model_serializer(mode='wrap')
+    def compatible_answer_mode(self, handler):
+        result = handler(self)
+        if self.answer_mode == 'resolve_fact':
+            result.pop('answer_mode', None)
+        return result
 
     @model_validator(mode="after")
     def checks_valid(self) -> "Requirement":
@@ -256,6 +264,14 @@ class Usage(StrictModel):
     output_tokens: int | None = Field(default=None, ge=0)
     cost: str | None = None
     basis: Literal["provider", "reserved_upper_bound", "unknown"] = "unknown"
+    provider_details: dict = Field(default_factory=dict)
+
+    @model_serializer(mode='wrap')
+    def compatible_usage(self, handler):
+        result = handler(self)
+        if not self.provider_details:
+            result.pop('provider_details', None)
+        return result
 
 
 class SearchBatch(StrictModel):
@@ -349,7 +365,7 @@ class GateResult(StrictModel):
 
 
 class StopDecision(StrictModel):
-    outcome: Literal["complete", "complete_with_limitations", "incomplete_budget", "incomplete_plateau", "incomplete_no_progress", "incomplete_report_audit_loop", "blocked", "failed", "cancelled"]
+    outcome: Literal["complete", "complete_with_limitations", "incomplete_budget", "incomplete_context", "incomplete_plateau", "incomplete_no_progress", "incomplete_report_audit_loop", "blocked", "failed", "cancelled"]
     evaluated_state_version: int = Field(ge=0)
     terminal_state_version: int = Field(gt=0)
     input_manifest_hash: str
@@ -376,6 +392,10 @@ class SearchAction(StrictModel):
     query_plan: list[QuerySpec] = Field(min_length=1)
     acceptance_check_ids: list[str]
     max_external_calls: int = Field(gt=0)
+    target_node_ids: list[str] = Field(default_factory=list)
+    target_gap_ids: list[str] = Field(default_factory=list)
+    research_goal: str = ''
+    refresh_sources: bool = False
 
 
 class OutlinePatchAction(StrictModel):
@@ -395,6 +415,23 @@ class OutlineNode(StrictModel):
     active: bool = True
     notes: list[str] = Field(default_factory=list)
     replaced_by: list[str] = Field(default_factory=list)
+    research_question: str = ''
+    purpose: str = ''
+    order: int = Field(default=0, ge=0)
+    gap_ids: list[str] = Field(default_factory=list)
+
+
+class ResearchGap(StrictModel):
+    id: str = Field(min_length=1)
+    node_ids: list[str] = Field(min_length=1)
+    requirement_ids: list[str] = Field(min_length=1)
+    question: str = Field(min_length=1)
+    kind: Literal['mechanism', 'comparison', 'condition', 'counterevidence', 'data', 'source', 'other'] = 'other'
+    priority: Literal['blocking', 'supplementary'] = 'blocking'
+    status: Literal['open', 'investigating', 'resolved', 'accepted_unknown', 'deferred'] = 'open'
+    investigation_refs: list[str] = Field(default_factory=list)
+    resolution_refs: list[str] = Field(default_factory=list)
+    resolution_audit_id: str | None = None
 
 
 class OutlineState(StrictModel):
@@ -403,10 +440,11 @@ class OutlineState(StrictModel):
     nodes: list[OutlineNode] = Field(min_length=1)
     reason_refs: list[str] = Field(default_factory=list)
     operations: list[dict] = Field(default_factory=list)
+    gaps: list[ResearchGap] = Field(default_factory=list)
 
 
 class OutlineOperation(StrictModel):
-    kind: Literal["add", "split", "merge", "move", "narrow_claim", "bind_evidence", "add_counterview", "mark_gap", "retire_node"]
+    kind: Literal["add", "split", "merge", "move", "narrow_claim", "bind_evidence", "add_counterview", "mark_gap", "retire_node", "update_node", "reorder", "resolve_gap", "reopen_gap"]
     node_id: str
     target_parent_id: str | None = None
     title: str | None = None
@@ -417,6 +455,15 @@ class OutlineOperation(StrictModel):
     target_node_ids: list[str] = Field(default_factory=list)
     claim_ids: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    research_question: str | None = None
+    purpose: str | None = None
+    before_id: str | None = None
+    after_id: str | None = None
+    gap_id: str | None = None
+    gap_kind: Literal['mechanism', 'comparison', 'condition', 'counterevidence', 'data', 'source', 'other'] = 'other'
+    gap_priority: Literal['blocking', 'supplementary'] = 'blocking'
+    resolution_status: Literal['resolved', 'accepted_unknown', 'deferred'] = 'resolved'
+    resolution_refs: list[str] = Field(default_factory=list)
 
 
 class TerminateProposal(StrictModel):
@@ -425,11 +472,16 @@ class TerminateProposal(StrictModel):
     proposed_outcome: str
 
 
-ResearchAction = Annotated[SearchAction | OutlinePatchAction | TerminateProposal, Field(discriminator="kind")]
+class InspectMaterialAction(StrictModel):
+    kind: Literal['inspect_material'] = 'inspect_material'
+    summary_ids: list[str] = Field(min_length=1)
+
+
+ResearchAction = Annotated[SearchAction | OutlinePatchAction | TerminateProposal | InspectMaterialAction, Field(discriminator="kind")]
 
 
 class RoleRequest(StrictModel):
-    role: Literal["planner.initialize", "auditor.question_space", "planner.next", "researcher.extract", "auditor.evidence", "auditor.counter_entailment", "auditor.provenance", "auditor.conflict", "auditor.coverage", "auditor.search_bias", "writer.section", "auditor.report", "planner.reuse_map"]
+    role: Literal["planner.initialize", "auditor.question_space", "planner.next", "researcher.extract", "auditor.evidence", "auditor.counter_entailment", "auditor.provenance", "auditor.conflict", "auditor.coverage", "auditor.search_bias", "writer.section", "auditor.report", "planner.reuse_map", "researcher.inspect_figures", "researcher.read_figure", "auditor.visual", "auditor.visual_counter", "vision.probe", "researcher.select_sources", "auditor.gap", "auditor.outline"]
     logical_action_key: str
     input_manifest_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
     contract_version: int = Field(gt=0)
@@ -440,6 +492,30 @@ class RoleRequest(StrictModel):
     response_schema_id: str
     response_schema_version: int = Field(gt=0)
     max_output_tokens: int = Field(gt=0)
+    images: list["RoleImage"] = Field(default_factory=list)
+
+
+class RoleImage(StrictModel):
+    blob_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    media_type: Literal["image/png"] = "image/png"
+    data_base64: str
+    width: int = Field(gt=0)
+    height: int = Field(gt=0)
+
+    @model_validator(mode="after")
+    def valid_content(self):
+        import base64
+        import hashlib
+        import struct
+        data = base64.b64decode(self.data_base64, validate=True)
+        if not data.startswith(b'\x89PNG\r\n\x1a\n') or len(data) < 24 or hashlib.sha256(data).hexdigest() != self.blob_hash:
+            raise ValueError('image content/hash mismatch')
+        if struct.unpack('>II', data[16:24]) != (self.width, self.height):
+            raise ValueError('image dimensions mismatch')
+        return self
+
+
+RoleRequest.model_rebuild()
 
 
 class RoleResponse(StrictModel):
@@ -460,6 +536,9 @@ class QuestionSpaceAudit(StrictModel):
     review_status: Literal["pass", "missing", "needs_clarification"]
     dimensions_checked: list[str] = Field(min_length=1)
     missing_questions: list[str]
+    recommended_action: Literal['research', 'refine', 'keep', 'ready'] = 'keep'
+    reason: str = ''
+    new_dimensions: list[str] = Field(default_factory=list)
 
 
 class SearchBiasVerdict(StrictModel):
@@ -481,6 +560,37 @@ class CandidateEvidence(StrictModel):
 
 class CandidateEvidenceBundle(StrictModel):
     candidates: list[CandidateEvidence]
+    summary: str = ''
+    new_dimensions: list[str] = Field(default_factory=list)
+    remaining_questions: list[str] = Field(default_factory=list)
+
+
+class SourceSelection(StrictModel):
+    selected_hit_ids: list[str]
+    reasons: dict[str, str]
+
+
+class GapVerdict(StrictModel):
+    gap_id: str
+    verdict: Literal['pass', 'missing']
+    reason: str = Field(min_length=1)
+    checked_refs: list[str]
+
+
+class NodeReview(StrictModel):
+    node_id: str
+    disposition: Literal['supported', 'overview', 'accepted_unknown', 'missing']
+    reason: str = Field(min_length=1)
+    claim_version_ids: list[str] = Field(default_factory=list)
+
+
+class OutlineReview(StrictModel):
+    outline_version: int
+    nodes: list[NodeReview]
+    missing_dimensions: list[str]
+    unincorporated_summary_ids: list[str]
+    decision: Literal['research', 'refine', 'ready']
+    reason: str = Field(min_length=1)
 
 
 class EvidenceAuditVerdict(StrictModel):

@@ -1,0 +1,63 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "max_image_bytes": {
+      "exclusiveMinimum": 0,
+      "title": "Max Image Bytes",
+      "type": "integer"
+    },
+    "max_image_pixels": {
+      "exclusiveMinimum": 0,
+      "title": "Max Image Pixels",
+      "type": "integer"
+    },
+    "max_images": {
+      "exclusiveMinimum": 0,
+      "title": "Max Images",
+      "type": "integer"
+    },
+    "max_request_bytes": {
+      "exclusiveMinimum": 0,
+      "title": "Max Request Bytes",
+      "type": "integer"
+    },
+    "model": {
+      "minLength": 1,
+      "title": "Model",
+      "type": "string"
+    },
+    "profile_id": {
+      "minLength": 1,
+      "title": "Profile Id",
+      "type": "string"
+    },
+    "revision": {
+      "minLength": 1,
+      "title": "Revision",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "supports_images": {
+      "const": true,
+      "title": "Supports Images",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "profile_id",
+    "model",
+    "revision",
+    "supports_images",
+    "max_image_bytes",
+    "max_image_pixels",
+    "max_images",
+    "max_request_bytes"
+  ],
+  "title": "VisionProfile",
+  "type": "object"
+}

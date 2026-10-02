@@ -1,0 +1,104 @@
+{
+  "$defs": {
+    "FigureSelection": {
+      "additionalProperties": false,
+      "properties": {
+        "figure_ref": {
+          "title": "Figure Ref",
+          "type": "string"
+        },
+        "goal": {
+          "maxLength": 12000,
+          "minLength": 1,
+          "title": "Goal",
+          "type": "string"
+        },
+        "regions": {
+          "items": {
+            "$ref": "#/$defs/RegionProposal"
+          },
+          "maxItems": 6,
+          "title": "Regions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "figure_ref",
+        "goal"
+      ],
+      "title": "FigureSelection",
+      "type": "object"
+    },
+    "RegionProposal": {
+      "additionalProperties": false,
+      "properties": {
+        "bbox": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 4,
+              "minItems": 4,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bbox"
+        },
+        "detail": {
+          "default": false,
+          "title": "Detail",
+          "type": "boolean"
+        },
+        "page": {
+          "minimum": 1,
+          "title": "Page",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "page"
+      ],
+      "title": "RegionProposal",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "irrelevant": {
+      "additionalProperties": {
+        "maxLength": 12000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "title": "Irrelevant",
+      "type": "object"
+    },
+    "reads": {
+      "items": {
+        "$ref": "#/$defs/FigureSelection"
+      },
+      "maxItems": 3,
+      "title": "Reads",
+      "type": "array"
+    },
+    "unresolved": {
+      "additionalProperties": {
+        "maxLength": 12000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "title": "Unresolved",
+      "type": "object"
+    }
+  },
+  "required": [
+    "reads"
+  ],
+  "title": "FigureReadPlan",
+  "type": "object"
+}

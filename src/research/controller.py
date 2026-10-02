@@ -16,7 +16,7 @@ from .jsonio import canonical, digest, loads
 from .models import (
     BoundedUnknownFact, CandidateEvidenceBundle, CounterAuditVerdict,
     CoverageAssessment, CoverageProposal, DraftSection, EvidenceAuditVerdict,
-    FetchRequest, FactualFact, QuestionSpaceAudit,
+    FetchRequest, FactualFact, DisputeFact, QuestionSpaceAudit,
     QuerySpec, ReportAudit, ResearchContract, RoleRequest, SearchBatch, FetchResult,
     SearchAction, SearchBiasVerdict, StopDecision, GateResult, OutlineState,
 )
@@ -28,6 +28,8 @@ from .outline import ordered_nodes, section_context
 from .loop import ResearchLoopMixin, ResearchStopped, ResearchReopened
 from .reuse_runtime import ReuseRuntimeMixin
 from .storage import now
+from .visual_runtime import VisualRuntimeMixin
+from .conflict_runtime import ConflictRuntimeMixin
 
 
 class IncompleteResearch(RuntimeError):
@@ -37,8 +39,8 @@ class IncompleteResearch(RuntimeError):
 T = TypeVar("T")
 
 
-class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
-    def __init__(self, store: Store, contract: ResearchContract, fixture_dir: Path | None, max_calls: int, pools: list[int], *, external_providers: tuple | None = None, max_rounds: int = 20, max_duration_seconds: int = 3600, max_no_progress_actions: int = 3, saturation_effective_rounds: int = 3, max_revision_cycles: int = 2, max_output_tokens: int = 4096, api_model_name: str | None = None):
+class Controller(ConflictRuntimeMixin, VisualRuntimeMixin, ReuseRuntimeMixin, ResearchLoopMixin):
+    def __init__(self, store: Store, contract: ResearchContract, fixture_dir: Path | None, max_calls: int, pools: list[int], *, external_providers: tuple | None = None, max_rounds: int = 20, max_duration_seconds: int = 3600, max_no_progress_actions: int = 3, saturation_effective_rounds: int = 3, max_revision_cycles: int = 2, max_output_tokens: int = 4096, api_model_name: str | None = None, research_config=None):
         self.max_output_tokens = max_output_tokens
         self.api_model_name = api_model_name
         self.clock = now
@@ -67,6 +69,12 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
         self.budget = BudgetManager(store, max_calls, pools)
         self.owner = str(uuid.uuid4())
         self.generation = store.acquire(self.owner)
+        from .config import Visual, Extraction, Writing, Planning
+        self.planning_config = getattr(research_config, 'planning', Planning())
+        self.budget.exploration_floor = self.planning_config.closing_reserve_calls
+        self.visual_config = research_config.visual if research_config else Visual()
+        self.extraction_config = research_config.extraction if research_config else Extraction()
+        self.writing_config = getattr(research_config, 'writing', Writing())
 
     def close(self) -> None:
         self.tick(enforce=False)
@@ -82,6 +90,11 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
         version = self.store.run()["state_version"]
         unresolved = [r['id'] for r in self.heads('coverage') if r['payload']['disposition'] not in {'satisfied','bounded_unknown'}]
         unresolved += [r['id'] for r in self.open_report_gaps()]
+        unresolved += [r['id'] for r in self.current_conflicts() if r['payload'].get('status') != 'resolved']
+        unresolved += ['conflict-comparison:' + key for key in self.conflict_scan_state()['pending_ids']]
+        current_outline = self.head('outline', 'outline')
+        if current_outline:
+            unresolved += self.blocking_gaps(OutlineState.model_validate(current_outline['payload']))
         stop = StopDecision(outcome=outcome, evaluated_state_version=version, terminal_state_version=version + 1, input_manifest_hash=digest({"outcome": outcome, "reason": reason, "state_version": version}), gate_results=[GateResult(code="execution", status="fail", reason=reason)], unresolved_ids=unresolved, budget_snapshot=self.usage_snapshot(), **self.stop_context())
         receipt = self.commit(f"stop:{outcome}:{version}", stop.model_dump(mode="json"), [("stop", f"stop:{version}", stop.model_dump(mode="json"))])
         with self.store.transaction() as db:
@@ -89,9 +102,12 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
             db.execute("UPDATE runs SET phase='terminal',lifecycle_status=?,research_outcome=?,current_stop_version_id=?", ("failed" if outcome == "failed" else "incomplete", outcome, receipt["refs"][0]["version_id"]))
         (self.store.run_dir / "stop.json").write_bytes(canonical(stop.model_dump(mode="json")))
 
-    async def role(self, role: str, action_key: str, packet: dict[str, str | int | bool | list[str]], result_type: type[T] | TypeAdapter) -> T:
+    async def role(self, role: str, action_key: str, packet: dict[str, str | int | bool | list[str]], result_type: type[T] | TypeAdapter, *, image_hashes=None) -> T:
         self.tick()
         packet = dict(packet, contract_json=self.contract.model_dump_json())
+        if image_hashes:
+            packet['visual_image_hashes'] = list(image_hashes)
+        images = []
         # A logical step owns its immutable request. Resume uses that exact packet,
         # even if a crash occurred after part of the step committed its results.
         request_dir = self.store.run_dir / 'role-inputs'
@@ -110,6 +126,9 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
             temp = request_path.with_suffix('.tmp')
             temp.write_bytes(canonical({'role': role, 'key': action_key, 'contract_version': self.contract.version, 'packet': packet}))
             os.replace(temp, request_path)
+        if packet.get('visual_image_hashes'):
+            from .visual_runtime import role_images
+            images = role_images(self.store, packet['visual_image_hashes'])
         manifest_hash = digest({"role": role, "logical_action_key": action_key, "contract_version": self.contract.version, "packet": packet})
         action_id = f"role:{action_key}"
         row = self.store.db.execute("SELECT result_json,input_manifest_hash FROM actions WHERE action_id=?", (action_id,)).fetchone()
@@ -120,8 +139,10 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
         else:
             template = f"{role}.v1"
             template_hash = digest(role_template(role))
-            request = RoleRequest(role=role, logical_action_key=action_key, input_manifest_hash=manifest_hash, contract_version=self.contract.version, policy_version=1, system_template_id=template, system_template_hash=template_hash, data_packet=packet, response_schema_id=getattr(result_type, "__name__", "ResearchAction"), response_schema_version=1, max_output_tokens=self.max_output_tokens)
+            output_tokens = packet.get('writing_max_output_tokens', self.max_output_tokens) if role == 'writer.section' else self.max_output_tokens
+            request = RoleRequest(role=role, logical_action_key=action_key, input_manifest_hash=manifest_hash, contract_version=self.contract.version, policy_version=1, system_template_id=template, system_template_hash=template_hash, data_packet=packet, response_schema_id=getattr(result_type, "__name__", "ResearchAction"), response_schema_version=1, max_output_tokens=output_tokens, images=images)
             attempt = self.budget.reserve(action_id, "role", manifest_hash, "report_audit" if role == "auditor.report" else "writing" if role == "writer.section" else "research", self.owner, self.generation)
+            response = None
             try:
                 from .context import ContextBuilder
                 ContextBuilder.save(self.store, request, attempt, self.owner, self.generation)
@@ -133,7 +154,7 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
                     db.execute("UPDATE actions SET result_json=?,result_hash=? WHERE action_id=?", (canonical(raw_response).decode(), digest(raw_response), action_id))
             except Exception as exc:
                 from .models import Usage
-                self.budget.settle(attempt, Usage(basis="unknown"), error=type(exc).__name__)
+                self.budget.settle(attempt, response.usage if response is not None else getattr(exc, 'usage', None) or Usage(basis="unknown"), error=type(exc).__name__)
                 raise
         if isinstance(result_type, TypeAdapter):
             return result_type.validate_python(raw_response, strict=True)
@@ -148,6 +169,8 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
             db.execute("UPDATE runs SET phase=?, lifecycle_status='active', research_outcome=NULL, current_stop_version_id=NULL", (value,))
 
     async def research_action(self, action: SearchAction, outline: OutlineState) -> None:
+        scope = self.search_scope(action, outline)
+        research_key = digest({'queries': [q.query_id for q in action.query_plan], 'scope': scope})
         requirements = [r.id for r in self.contract.requirements]
         if not set(q.question_id for q in action.query_plan) <= set(outline.question_ids):
             raise IncompleteResearch("unknown question in search action")
@@ -176,11 +199,16 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
             hits.extend(batch.hits)
 
         evidence_by_requirement: dict[str, list[dict[str, object]]] = {rid: [] for rid in requirements}
+        hits = await self.select_sources(hits, scope, research_key)
         for hit in hits:
             action_id = f"fetch:{hit.hit_id}"
             row = self.store.db.execute("SELECT result_json FROM actions WHERE action_id=? AND state IN ('result_saved','committed')", (action_id,)).fetchone()
             if row and row["result_json"]:
                 fetched = FetchResult.model_validate(json.loads(row["result_json"]), strict=True)
+                raw = self.store.read_blob(fetched.blob_hash)
+            elif not action.refresh_sources and self.head('source_cache', digest(hit.url)):
+                cached = self.head('source_cache', digest(hit.url))['payload']
+                fetched = FetchResult.model_validate(cached['fetch'])
                 raw = self.store.read_blob(fetched.blob_hash)
             else:
                 attempt = self.budget.reserve(action_id, "fetch", digest({"url": hit.url}), "research", self.owner, self.generation)
@@ -195,13 +223,29 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
                     from .models import Usage
                     self.budget.settle(attempt, Usage(basis="unknown"), error=type(exc).__name__)
                     raise
+            cache = dict(fetch=fetched.model_dump(mode='json'))
+            self.commit(f'source-cache:{hit.hit_id}', cache, [('source_cache', digest(hit.url), cache)])
             raw_hash = self.store.put_blob(raw)
-            parsed, text = parse_document(raw, fetched.mime or "")
+            parsed, text, document = await self.parse_source(raw, fetched.mime or "")
             text_hash = self.store.put_blob(text.encode("utf-8"))
             if raw_hash != fetched.blob_hash or text_hash != parsed.text_blob_hash:
                 raise RuntimeError("snapshot hash mismatch")
+            read_key = digest(dict(url=hit.url, snapshot=raw_hash, scope=scope,
+                contract=self.contract.model_dump(mode='json'), extraction_prompt=role_template('researcher.extract'),
+                evidence_prompt=role_template('auditor.evidence'), counter_prompt=role_template('auditor.counter_entailment')))
+            prior_read = self.head('research_read', read_key)
+            current_pairs = {(r['claim_ref']['version_id'], r['evidence_ref']['version_id'])
+                             for rows in self.evidence_rows().values() for r in rows}
+            if prior_read and prior_read['payload']['pairs'] and all(tuple(p) in current_pairs for p in prior_read['payload']['pairs']) and not self.visual_config.enabled:
+                self.commit(f'read-reuse:{hit.hit_id}', dict(read_key=read_key, query_ids=[q.query_id for q in action.query_plan]),
+                    [('read_reuse', hit.hit_id, dict(read_key=read_key))])
+                continue
             packet = {"source_id": hit.hit_id, "text_blob_hash": text_hash, "title": hit.title}
             packet.update(document_text=text, source_url=hit.url)
+            packet.update(research_scope_json=canonical(scope).decode(),
+                          query_texts=[q.text for q in action.query_plan],
+                          known_findings_json=canonical(self.planning_memory(outline)).decode(),
+                          summary_max_characters=self.planning_config.summary_characters)
             bundle = await self.role("researcher.extract", f"extract:{hit.hit_id}", packet, CandidateEvidenceBundle)
             snapshot = {"source_id": hit.hit_id, "url": hit.url, "raw_hash": raw_hash, "text_hash": text_hash, "fetched_at": fetched.fetched_at, "parser": parsed.parser_id}
             if hit.published_at:
@@ -215,9 +259,12 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
                     raise RuntimeError("invalid evidence locator")
                 evidence_id = f"{hit.hit_id}.e{index+1}"
                 evidence = {"snapshot_id": hit.hit_id, "excerpt": candidate.excerpt, "locator": locator.model_dump(mode="json"), "source_class": candidate.source_class, "observation_root": candidate.observation_root, "validity": "active"}
+                if document is not None:
+                    evidence['observation_root'] = raw_hash
                 claim = {"text": candidate.claim_text, "kind": candidate.claim_kind, "requirement_ids": candidate.requirement_ids, "validity": "current"}
                 receipt = self.commit(f"candidate:{evidence_id}", {"claim": claim, "evidence": evidence}, [("evidence", evidence_id, evidence), ("claim", candidate.claim_id, claim)])
                 refs = {item["kind"]: item for item in receipt["refs"]}
+                self.bind_candidate_evidence(refs['claim'], refs['evidence'])
                 audit_packet = {"claim_version_id": refs["claim"]["version_id"], "evidence_id": evidence_id, "excerpt_hash": locator.quote_hash, "source_class": candidate.source_class, "url": hit.url}
                 audit_packet.update(claim_text=candidate.claim_text, excerpt=candidate.excerpt,
                     source_context=text[max(0, locator.start-1500):locator.end+1500])
@@ -231,19 +278,49 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
                     self.store.add_link(f"link:{evidence_id}", EntityRef.model_validate(refs["claim"]), EntityRef.model_validate(refs["evidence"]), EntityRef.model_validate(audit_receipt["refs"][0]), "supports", self.owner, self.generation)
                 for rid in candidate.requirement_ids:
                     evidence_by_requirement[rid].append({"claim_ref": refs["claim"], "evidence_ref": refs["evidence"], "source_class": candidate.source_class, "source_class_verified": forward.source_class_verified, "kind": candidate.claim_kind, "qualified": qualified})
+            if document is not None:
+                await self.research_figures(action, hit, document)
+            elif self.visual_config.enabled and fetched.mime == 'text/html':
+                from .visual_extract import discover_html_figures
+                figures = discover_html_figures(raw, hit.url)
+                if figures:
+                    requirements_for_action = [r.id for r in self.contract.requirements if any(
+                        check.check_id in action.acceptance_check_ids for check in r.acceptance_checks)]
+                    self.visual_gap('html:' + raw_hash, requirements_for_action,
+                                    'requires_validated_image_fetch: ' + canonical(figures).decode())
+            claims = [r for r in self.heads('claim') if r['id'] in {c.claim_id for c in bundle.candidates}]
+            pairs = [list(p) for rows in self.evidence_rows().values() for r in rows
+                     if r['evidence_ref']['id'].startswith(hit.hit_id + '.e')
+                     for p in [(r['claim_ref']['version_id'], r['evidence_ref']['version_id'])]]
+            summary = dict(source_id=hit.hit_id, source_url=hit.url, snapshot_hash=raw_hash,
+                research_goal=scope['research_goal'], target_node_ids=scope['target_node_ids'],
+                target_gap_ids=scope['target_gap_ids'], requirement_ids=scope['requirement_ids'],
+                text=bundle.summary or '\n'.join(c.claim_text for c in bundle.candidates),
+                new_dimensions=bundle.new_dimensions, remaining_questions=bundle.remaining_questions,
+                claim_version_ids=[c['version_id'] for c in claims],
+                audited_claim_version_ids=sorted({p[0] for p in pairs}),
+                status='research_lead_not_an_audit',
+                planner_step=(self.head('loop','controller') or {'payload': {'step': 0}})['payload']['step'])
+            self.commit(f'research-summary:{hit.hit_id}', summary, [('research_summary', hit.hit_id, summary)])
+            self.commit(f'research-read:{hit.hit_id}', dict(pairs=pairs, summary_id=hit.hit_id),
+                [('research_read', read_key, dict(pairs=pairs, summary_id=hit.hit_id))])
 
 
     async def assess(self, outline: OutlineState, question_audit: QuestionSpaceAudit):
+        await self.review_conflicts()
         contract = self.contract
         evidence_by_requirement = self.evidence_rows()
         queries = [QuerySpec.model_validate(row['payload']) for row in self.heads('query')]
         batches = {row['id']: row['payload'] for row in self.heads('query_result')}
         outcomes = [QueryOutcome(q.strategy_family, 'failed' if batches[q.query_id]['status'] == 'error' else batches[q.query_id]['status']) for q in queries]
-        token = digest({'outline': outline.model_dump(mode='json'), 'research': self.research_digest()})
+        # Coverage depends on requirements/evidence, not sibling order or titles.
+        token = digest({'requirements': [r.model_dump(mode='json') for r in contract.requirements], 'research': self.research_digest()})
         bias = await self.role("auditor.search_bias", f"search-bias:{token}", {"question_ids": outline.question_ids, "query_ids": [q.query_id for q in queries], "research_digest_json": canonical(self.research_digest()).decode()}, SearchBiasVerdict)
         if not set(bias.query_families_seen) <= {q.strategy_family for q, outcome in zip(queries, outcomes) if outcome.status in {"hit", "empty"}}:
             raise RuntimeError("search bias audit invents a query family")
-        if not set(bias.source_classes_seen) <= {str(row["source_class"]) for rows in evidence_by_requirement.values() for row in rows}:
+        # Seen sources include contested/rejected material; their presence is
+        # not authorization to count them as support for a factual conclusion.
+        if not set(bias.source_classes_seen) <= {str(row['payload']['source_class']) for row in self.heads('evidence')}:
             raise RuntimeError("search bias audit invents a source class")
         self.commit(f"search-bias-audit:{token}", bias.model_dump(mode="json"), [("audit", "search-bias", bias.model_dump(mode="json"))])
         assessments = []
@@ -264,6 +341,9 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
                 elif check.code == "challenge_attempted":
                     if challenge_satisfied([o for q, o in zip(queries, outcomes) if q.question_id == requirement.id], set(check.params.families), check.params.min_successful_queries):
                         passed.add(check.check_id)
+                elif check.code == 'conflict_disposition':
+                    if self.conflict_requirement_ready(requirement, unknown=requirement.allow_unknown):
+                        passed.add(check.check_id)
                 elif check.code == 'freshness':
                     from .models import utc
                     for evidence_row in rows:
@@ -274,6 +354,13 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
                             passed.add(check.check_id)
                             break
             research_checks = {c.check_id for c in requirement.acceptance_checks if c.stage == "research"}
+            visual_gaps = [g for g in self.heads('visual_gap') if g['payload']['status'] == 'open'
+                           and requirement.id in g['payload']['requirement_ids']]
+            if visual_gaps:
+                # Unread figures must not be hidden by other text evidence.
+                passed -= {c.check_id for c in requirement.acceptance_checks if c.code == 'has_current_support'}
+            if not self.conflict_requirement_ready(requirement):
+                passed -= {c.check_id for c in requirement.acceptance_checks if c.code == 'has_current_support'}
             proposal = await self.role("auditor.coverage", f"coverage:{requirement.id}:{token}", {"requirement_id": requirement.id, "passed_check_ids": sorted(passed), "missing_check_ids": sorted(research_checks - passed), "research_digest_json": canonical(self.research_digest()).decode()}, CoverageProposal)
             if proposal.requirement_id != requirement.id or set(proposal.passed_check_ids) != passed or set(proposal.missing_check_ids) != research_checks - passed:
                 raise RuntimeError("coverage proposal contradicts deterministic checks")
@@ -282,6 +369,10 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
                 raise RuntimeError("coverage refers to unsupported claim")
             if proposal.disposition == "satisfied" and passed != research_checks:
                 raise RuntimeError("unsupported coverage claim")
+            if proposal.disposition == 'satisfied' and visual_gaps:
+                raise RuntimeError('unresolved visual reading obligation')
+            if proposal.disposition in {'satisfied', 'bounded_unknown'} and not self.conflict_requirement_ready(requirement, unknown=proposal.disposition == 'bounded_unknown'):
+                raise RuntimeError('unresolved or unchecked evidence conflict')
             if proposal.disposition == "satisfied":
                 for check in requirement.acceptance_checks:
                     if check.code == 'has_current_support' and len(set(proposal.claim_version_ids)) < check.params.min_claims:
@@ -306,6 +397,8 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
                 self.commit(f'resolve-gap:{gap_id}:{requirement.id}:{token}',resolved,[('report_gap',gap_id,resolved)])
             assessment = CoverageAssessment(requirement_id=requirement.id, stage="research", contract_version=contract.version, input_manifest_hash=digest({"requirement": requirement.id, "passed": sorted(passed), "research": token}), disposition=proposal.disposition, passed_check_ids=sorted(passed), missing_check_ids=sorted(research_checks - passed), claim_version_ids=proposal.claim_version_ids, audit_id=f"coverage:{requirement.id}:{token}")
             receipt = self.commit(f"coverage:{requirement.id}:{token}", assessment.model_dump(mode="json"), [("coverage", requirement.id, assessment.model_dump(mode="json"))])
+            conflict_state = self.conflict_freeze()
+            self.conflict_dependency(conflict_state['case_refs'] + conflict_state['scan']['comparison_refs'], receipt['refs'][0]['version_id'])
             assessment_refs[requirement.id] = receipt["refs"][0]["version_id"]
             assessments.append(assessment)
 
@@ -313,14 +406,24 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
         return assessments, assessment_refs, bias, gates
 
     async def write_report(self, outline: OutlineState, assessments, assessment_refs) -> str:
+        from .writing import writer_packet, writing_brief, depth_status
         contract = self.contract
-        freeze = self.head('freeze','outline')['payload']
+        frozen = self.head('freeze', 'outline')
+        if frozen is None:
+            raise ResearchReopened('report freeze was invalidated')
+        freeze = frozen['payload']
+        self.require_conflict_ready(assessments)
+        if freeze.get('conflicts') != self.conflict_freeze():
+            raise ResearchReopened('conflict evidence changed after report freeze')
         if freeze['outline_version'] != outline.outline_version or set(freeze['coverage_refs']) != set(assessment_refs.values()):
             raise RuntimeError('writing input does not match frozen research versions')
         evidence_by_requirement = self.evidence_rows()
         self.phase("writing")
         sections = []
-        for index, node in enumerate(ordered_nodes(outline)):
+        depth_checks = []
+        nodes_in_order = ordered_nodes(outline)
+        brief = writing_brief(outline, contract, self.writing_config)
+        for index, node in enumerate(nodes_in_order):
             section_name = node.title
             revision = self.store.db.execute('SELECT COALESCE(MAX(revision),0) FROM revision_jobs WHERE section_id=? AND contract_version=?', (node.id,contract.version)).fetchone()[0]
             material = self.section_material(node)
@@ -335,11 +438,33 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
                     key += ':material:' + digest(material)
                 feedback = self.head('audit','report')
                 packet = {"section_id": node.id, "section_name": section_name, "outline_version": outline.outline_version, "revision": revision,
-                    "section_context_json": canonical(section_context(outline, node)).decode(),
+                    "section_context_json": canonical(section_context(outline, node, self.planning_config.max_depth)).decode(),
                     "node_json": node.model_dump_json(), "section_material_json": canonical(material).decode(), "claim_version_ids": sorted(allowed_claims)}
+                packet.update(writer_packet(self.store, outline, material, sections, contract, self.writing_config))
                 if revision:
                     packet['report_feedback_json'] = canonical(feedback['payload'] if feedback else {}).decode()
+                    if previous:
+                        packet['previous_draft_json'] = canonical(previous['payload']).decode()
                 section = await self.role("writer.section", key, packet, DraftSection)
+                for expansion in range(self.writing_config.max_expansion_rounds):
+                    status = depth_status(section, material, brief['target_characters'])
+                    if not status['needs_expansion']:
+                        break
+                    # Leave a first-draft call for each unfinished later section.
+                    pending = 0
+                    for later in nodes_in_order[index + 1:]:
+                        draft = self.head('draft', later.id)
+                        needed_revision = self.store.db.execute('SELECT COALESCE(MAX(revision),0) FROM revision_jobs WHERE section_id=? AND contract_version=?', (later.id, contract.version)).fetchone()[0]
+                        if not draft or draft['payload']['outline_version'] != outline.outline_version or draft['payload']['revision'] != needed_revision:
+                            pending += 1
+                    expansion_key = key + f':expand:{expansion + 1}'
+                    cached = self.store.db.execute('SELECT result_json FROM actions WHERE action_id=?', ('role:' + expansion_key,)).fetchone()
+                    if not (cached and cached['result_json']) and self.budget.snapshot()['remaining']['writing'] <= pending:
+                        break
+                    expansion_packet = dict(packet,
+                        previous_draft_json=section.model_dump_json(),
+                        expansion_feedback_json=canonical(status).decode())
+                    section = await self.role('writer.section', expansion_key, expansion_packet, DraftSection)
             if section.section_id != node.id or section.outline_version != outline.outline_version or section.revision != revision:
                 raise RuntimeError("writer section mismatch")
             for fact in section.facts:
@@ -353,8 +478,10 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
             draft_key = f"draft:{outline.outline_version}:{section.section_id}:{revision}"
             if self.store.db.execute('SELECT 1 FROM reuse_imports LIMIT 1').fetchone():
                 draft_key += ':' + digest(section.model_dump(mode='json'))
-            self.commit(draft_key, section.model_dump(mode="json"), [("draft", section.section_id, section.model_dump(mode="json"))])
+            draft_ref = self.commit(draft_key, section.model_dump(mode="json"), [("draft", section.section_id, section.model_dump(mode="json"))])['refs'][0]
+            self.conflict_dependency([self.head('freeze', 'outline')['version_id']], draft_ref['version_id'])
             sections.append((section_name, section))
+            depth_checks.append(depth_status(section, material, brief['target_characters']))
         valid_claim_ids = {str(r["claim_ref"]["version_id"]) for rows in evidence_by_requirement.values() for r in rows if r["qualified"]}
         valid_evidence_ids = {str(r["evidence_ref"]["id"]) for rows in evidence_by_requirement.values() for r in rows if r["qualified"]}
         for _, section in sections:
@@ -368,6 +495,7 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
                     raise RuntimeError("draft cites unapproved evidence")
                 if isinstance(fact, BoundedUnknownFact) and fact.coverage_assessment_version_id != assessment_refs.get(fact.requirement_ids[0]):
                     raise RuntimeError("draft cites wrong unknown assessment")
+        dispute_evidence_ids = self.validate_dispute_facts(sections, assessments)
         lines = []
         if self.assisted:
             provenance = (
@@ -390,16 +518,24 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
                 for sentence in paragraph.sentences:
                     refs = []
                     for fact in section.facts:
-                        if fact.id in sentence.fact_ids and isinstance(fact, FactualFact):
+                        if fact.id in sentence.fact_ids and isinstance(fact, (FactualFact, DisputeFact)):
                             refs.extend(fact.evidence_ids)
                     investigations = [ref for fact in section.facts if fact.id in sentence.fact_ids and isinstance(fact, BoundedUnknownFact) for ref in fact.investigation_refs]
                     suffix = "".join(f" [^{ref}]" for ref in sorted(set(refs))) + "".join(f" [调查记录:{ref}]" for ref in sorted(set(investigations)))
                     sentences.append(sentence.text + suffix)
                 lines.append("".join(sentences))
-        for evidence_id in sorted(valid_evidence_ids):
+        for evidence_id in sorted(valid_evidence_ids | dispute_evidence_ids):
             row = self.store.db.execute("SELECT payload_json FROM entity_versions WHERE kind='evidence' AND id=? ORDER BY version DESC LIMIT 1", (evidence_id,)).fetchone()
             evidence = json.loads(row[0])
-            citation = f"local snapshot {evidence['snapshot_id']}, text SHA-256 {evidence['locator']['text_blob_hash']}, span {evidence['locator']['start']}:{evidence['locator']['end']}"
+            if evidence['locator']['kind'] == 'pdf_region':
+                from .visual_runtime import verify_visual_evidence
+                artifact, _ = verify_visual_evidence(self.store, evidence)
+                citation = (f"PDF SHA-256 {artifact.snapshot_ref}, "
+                    f"pages {sorted({r.page for r in artifact.page_regions})}, {artifact.figure_label}; "
+                    + '; '.join(evidence['observation']['conditions']) + '; '
+                    + ' '.join(f'[图像预览](blobs/{i.blob_hash})' for i in artifact.images))
+            else:
+                citation = f"local snapshot {evidence['snapshot_id']}, text SHA-256 {evidence['locator']['text_blob_hash']}, span {evidence['locator']['start']}:{evidence['locator']['end']}"
             if self.assisted:
                 snapshot_row = self.store.db.execute("SELECT payload_json FROM entity_versions WHERE kind='snapshot' AND id=? ORDER BY version DESC LIMIT 1", (evidence['snapshot_id'],)).fetchone()
                 snapshot = json.loads(snapshot_row[0])
@@ -415,6 +551,10 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
         report_packet["sections_json"] = canonical([section.model_dump(mode="json") for _, section in sections]).decode()
         report_packet["outline_json"] = outline.model_dump_json()
         report_packet["research_digest_json"] = canonical(self.research_digest()).decode()
+        report_packet['writing_brief_json'] = canonical(brief).decode()
+        report_packet['section_depth_json'] = canonical(depth_checks).decode()
+        if self.current_conflicts():
+            report_packet['conflicts_json'] = canonical(self.conflict_digest()).decode()
         revision_manifest = digest([(s.section_id,s.revision) for _,s in sections])
         audit_key = f"report:{outline.outline_version}:{revision_manifest}"
         if self.store.db.execute('SELECT 1 FROM reuse_imports LIMIT 1').fetchone():
@@ -464,6 +604,10 @@ class Controller(ReuseRuntimeMixin, ResearchLoopMixin):
         outcome = "complete_with_limitations" if self.assisted or any(a.disposition == "bounded_unknown" for a in assessments) else "complete"
         version = self.store.run()["state_version"]
         self.assert_reuse_delivery()
+        self.require_conflict_ready(assessments)
+        self.validate_dispute_facts(sections, assessments)
+        if freeze.get('conflicts') != self.conflict_freeze():
+            raise ResearchReopened('conflict evidence changed before delivery')
         version = self.store.run()['state_version']
         stop = StopDecision(outcome=outcome, evaluated_state_version=version, terminal_state_version=version+1, input_manifest_hash=digest({"report_hash": report_hash, "state_version": version}), gate_results=[GateResult(code="research", status="pass", reason="all research gates passed"), GateResult(code="delivery", status="pass", reason="report audit passed")], unresolved_ids=[], budget_snapshot=self.usage_snapshot(), report_hash=report_hash, **self.stop_context())
         stop_key = 'stop:' + digest(stop.model_dump(mode='json')) if self.store.db.execute('SELECT 1 FROM reuse_imports LIMIT 1').fetchone() else 'stop'

@@ -1,0 +1,50 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "action": {
+      "const": "read_figure",
+      "default": "read_figure",
+      "title": "Action",
+      "type": "string"
+    },
+    "expected_evidence": {
+      "default": "Visible observations with conditions and limitations",
+      "maxLength": 12000,
+      "minLength": 1,
+      "title": "Expected Evidence",
+      "type": "string"
+    },
+    "figure_ref": {
+      "maxLength": 12000,
+      "minLength": 1,
+      "title": "Figure Ref",
+      "type": "string"
+    },
+    "goal": {
+      "maxLength": 12000,
+      "minLength": 1,
+      "title": "Goal",
+      "type": "string"
+    },
+    "question_id": {
+      "maxLength": 12000,
+      "minLength": 1,
+      "title": "Question Id",
+      "type": "string"
+    },
+    "requirement_refs": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Requirement Refs",
+      "type": "array"
+    }
+  },
+  "required": [
+    "figure_ref",
+    "question_id",
+    "goal"
+  ],
+  "title": "ReadFigure",
+  "type": "object"
+}

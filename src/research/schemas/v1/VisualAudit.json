@@ -1,0 +1,58 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "checks": {
+      "additionalProperties": {
+        "enum": [
+          "pass",
+          "fail",
+          "not_applicable"
+        ],
+        "type": "string"
+      },
+      "title": "Checks",
+      "type": "object"
+    },
+    "findings": {
+      "items": {
+        "maxLength": 12000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "title": "Findings",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "maxLength": 12000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "title": "Limitations",
+      "type": "array"
+    },
+    "source_class_verified": {
+      "default": false,
+      "title": "Source Class Verified",
+      "type": "boolean"
+    },
+    "verdict": {
+      "enum": [
+        "accept",
+        "reject",
+        "unreadable",
+        "conflict"
+      ],
+      "title": "Verdict",
+      "type": "string"
+    }
+  },
+  "required": [
+    "verdict",
+    "checks",
+    "findings",
+    "limitations"
+  ],
+  "title": "VisualAudit",
+  "type": "object"
+}

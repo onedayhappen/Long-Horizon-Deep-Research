@@ -1,5 +1,19 @@
 # Deep Research
 
+## Local web workbench
+
+Run `python -m src research web --runs-root research-runs --port 8765`, then open
+[http://127.0.0.1:8765](http://127.0.0.1:8765). The bundled interface supports creating
+research, viewing progress, evidence and reports, responding to assistant mailbox
+requests, downloading artifacts, and resuming runs. No frontend build is required.
+Configure DeepSeek or SiliconFlow in **模型与设置**, or set `DEEPSEEK_API_KEY` /
+`SILICONFLOW_API_KEY` before starting. Keys entered in the browser remain in server
+memory only. Connection tests make one billable model request. The interface uses
+the existing assisted engine: search and fetch still require external responses.
+The server binds to loopback only. Shutting it down stops its child runs; saved
+state remains resumable after their leases expire. The offline demo uses fictional
+fixtures and requires a source checkout.
+
 [简体中文](README.zh-CN.md)
 
 Deep Research is an evidence based research and report workflow. Define a question, scope, and acceptance criteria; the system records source snapshots, checks claims and requirement coverage, and produces a report with traceable citations. Run state is stored locally so work can be inspected, exported, and resumed.
@@ -8,9 +22,10 @@ Deep Research is an evidence based research and report workflow. Define a questi
 
 ## Features
 
+- **Evidence conflicts:** Cross-source comparisons retain both sides, block unresolved factual conclusions, and support explicitly contracted dispute reports. See [conflict handling](docs/research/evidence-conflicts.md).
 - **Research contract:** A JSON contract defines the question, scope, required answers, evidence checks, and report structure. TOML controls execution mode and budgets.
 - **Traceable evidence:** Source snapshots, text locations, claims, review decisions, and citation relationships are stored with the run.
-- **Iterative outline:** Start with top-level questions, then develop evidence-backed second- and third-level sections as research uncovers distinct topics. Parents summarize; child sections explain scoped evidence and limits. See the [outline design](docs/research/outline.md).
+- **Iterative outline:** Start with top-level questions and develop subtopics from evidence. Chapter gaps drive targeted investigation and require reviewed closure; sibling ordering, bounded research summaries and a final outline review guide writing. See the [outline design](docs/research/outline.md).
 - **Report review:** Section and whole report checks can request targeted revisions or send a gap back to the research stage.
 - **Explicit reuse:** `--reuse-from` imports a frozen set of source materials into a new run. Candidates require purpose-specific time checks, document status validation and local audits. Imports recover after interruption; authorized ancestor invalidations are consumed before use.
 - **Resumable runs:** SQLite stores state, budgets, and events. Reports and evidence can be exported after a run.
@@ -94,6 +109,38 @@ A run directory typically contains:
 | `blobs/`, `bridge/` | Source snapshots and assisted request/response exchange |
 
 Run directories can contain source text, model output, and other sensitive material. They are excluded from Git by default.
+
+## Long-form writing
+
+Optional outline-planning settings (defaults shown):
+
+```toml
+[research.planning]
+max_depth = 4
+context_characters = 48000
+summary_characters = 2400
+max_sources_per_action = 5
+closing_reserve_calls = 4
+```
+
+Depth is a ceiling, not a heading quota. Planning uses the full outline, audited claim catalog and bounded summaries with explicit omitted IDs for retrieval. The character budget is not a model token limit; tune it for the provider. Required context that exceeds it stops with `incomplete_context` instead of silently dropping gaps. Identical URLs reuse run-local fetches; changed goals trigger fresh extraction, and `refresh_sources=true` requests fresh bytes. Research reserves closing calls, and final review also checks the remaining writing calls.
+
+The writer follows [WebWeaver's section-wise retrieval and writing approach](https://arxiv.org/html/2509.13312v2#S3.SS3). Each section receives the frozen outline, audited evidence, bounded local source context, and a bounded excerpt of preceding prose. Source context and previous prose do not authorize additional factual claims.
+
+Optional TOML settings (defaults shown):
+
+```toml
+[research.writing]
+max_output_tokens = 8192
+target_section_characters = 1800
+previous_context_characters = 2400
+source_context_characters = 12000
+max_expansion_rounds = 1
+```
+
+The writing token limit overrides `research.model.max_output_tokens` for writer calls; configure it for your provider. Body-character targets shrink to fit the contract and output allowance and are soft, so sparse evidence never requires padding. Sections with at least three supported claims but less than half their target receive at most one expansion by default, preserving first-draft calls for unfinished later sections. Increase the writing call pool (the second `research.budget.pool_percentages` entry) for larger outlines or more revisions.
+
+Report review checks explanatory depth, repetition and omissions as well as factual support. It can request a section rewrite or reopen research for required missing evidence. Citation and final contract-length checks still apply. Fictional replay fixtures verify execution, not live model writing quality.
 
 ## Implementation status
 

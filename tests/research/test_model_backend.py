@@ -41,3 +41,24 @@ def test_chat_json_rejects_duplicate_output_keys(monkeypatch):
     backend = ChatJsonRoleBackend(base_url="https://model.example", model="test", api_key_env="TEST_MODEL_KEY", temperature=0, profile_hash="profile")
     with pytest.raises(ValueError, match="duplicate"):
         asyncio.run(backend.generate(request()))
+
+
+@pytest.mark.parametrize('role,schema_name,value', [
+    ('researcher.select_sources', 'SourceSelection', {'selected_hit_ids': [], 'reasons': {'h1': 'Unrelated'}}),
+    ('auditor.gap', 'GapVerdict', {'gap_id': 'g1', 'verdict': 'missing', 'reason': 'Insufficient evidence', 'checked_refs': []}),
+    ('auditor.outline', 'OutlineReview', {'outline_version': 1, 'nodes': [], 'missing_dimensions': ['Scope'],
+                                        'unincorporated_summary_ids': [], 'decision': 'research', 'reason': 'Scope missing'}),
+])
+def test_planning_roles_reach_chat_backend_with_response_schema(monkeypatch, role, schema_name, value):
+    monkeypatch.setenv('TEST_MODEL_KEY', 'secret')
+    async def handler(req):
+        body = json.loads(req.content)
+        assert schema_name in body['messages'][0]['content']
+        assert template(role) in body['messages'][0]['content']
+        return httpx.Response(200, json={'choices': [{'finish_reason': 'stop', 'message': {'content': json.dumps(value)}}]})
+    original = httpx.AsyncClient
+    monkeypatch.setattr(httpx, 'AsyncClient', lambda **kwargs: original(transport=httpx.MockTransport(handler)))
+    req = request().model_copy(update=dict(role=role, response_schema_id=schema_name,
+        system_template_id=f'{role}.v1', system_template_hash=digest(template(role))))
+    backend = ChatJsonRoleBackend(base_url='https://model.example', model='test', api_key_env='TEST_MODEL_KEY', temperature=0, profile_hash='profile')
+    assert json.loads(asyncio.run(backend.generate(req)).raw_text) == value

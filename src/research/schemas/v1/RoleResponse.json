@@ -50,6 +50,11 @@
           ],
           "default": null,
           "title": "Output Tokens"
+        },
+        "provider_details": {
+          "additionalProperties": true,
+          "title": "Provider Details",
+          "type": "object"
         }
       },
       "title": "Usage",

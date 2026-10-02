@@ -1,0 +1,25 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "reasons": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Reasons",
+      "type": "object"
+    },
+    "selected_hit_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Selected Hit Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "selected_hit_ids",
+    "reasons"
+  ],
+  "title": "SourceSelection",
+  "type": "object"
+}

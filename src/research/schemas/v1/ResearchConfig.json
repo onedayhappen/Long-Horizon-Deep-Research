@@ -117,6 +117,18 @@
     "Extraction": {
       "additionalProperties": false,
       "properties": {
+        "max_input_bytes": {
+          "default": 8000000,
+          "exclusiveMinimum": 0,
+          "title": "Max Input Bytes",
+          "type": "integer"
+        },
+        "max_memory_bytes": {
+          "default": 536870912,
+          "exclusiveMinimum": 0,
+          "title": "Max Memory Bytes",
+          "type": "integer"
+        },
         "max_parse_seconds": {
           "default": 15,
           "exclusiveMinimum": 0,
@@ -133,6 +145,12 @@
           "default": 300000,
           "exclusiveMinimum": 0,
           "title": "Max Text Chars",
+          "type": "integer"
+        },
+        "max_total_render_bytes": {
+          "default": 50331648,
+          "exclusiveMinimum": 0,
+          "title": "Max Total Render Bytes",
           "type": "integer"
         },
         "max_windows_per_action": {
@@ -293,8 +311,8 @@
         },
         "temperature": {
           "default": 0.0,
-          "maximum": 2,
-          "minimum": 0,
+          "maximum": 2.0,
+          "minimum": 0.0,
           "title": "Temperature",
           "type": "number"
         },
@@ -321,6 +339,44 @@
       "title": "Model",
       "type": "object"
     },
+    "Planning": {
+      "additionalProperties": false,
+      "properties": {
+        "closing_reserve_calls": {
+          "default": 4,
+          "minimum": 1,
+          "title": "Closing Reserve Calls",
+          "type": "integer"
+        },
+        "context_characters": {
+          "default": 48000,
+          "minimum": 4000,
+          "title": "Context Characters",
+          "type": "integer"
+        },
+        "max_depth": {
+          "default": 4,
+          "maximum": 5,
+          "minimum": 1,
+          "title": "Max Depth",
+          "type": "integer"
+        },
+        "max_sources_per_action": {
+          "default": 5,
+          "minimum": 1,
+          "title": "Max Sources Per Action",
+          "type": "integer"
+        },
+        "summary_characters": {
+          "default": 2400,
+          "minimum": 200,
+          "title": "Summary Characters",
+          "type": "integer"
+        }
+      },
+      "title": "Planning",
+      "type": "object"
+    },
     "Research": {
       "additionalProperties": false,
       "properties": {
@@ -342,6 +398,9 @@
         "model": {
           "$ref": "#/$defs/Model"
         },
+        "planning": {
+          "$ref": "#/$defs/Planning"
+        },
         "runtime": {
           "$ref": "#/$defs/Runtime"
         },
@@ -350,6 +409,12 @@
         },
         "stopping": {
           "$ref": "#/$defs/Stopping"
+        },
+        "visual": {
+          "$ref": "#/$defs/Visual"
+        },
+        "writing": {
+          "$ref": "#/$defs/Writing"
         }
       },
       "required": [
@@ -445,6 +510,96 @@
         }
       },
       "title": "Stopping",
+      "type": "object"
+    },
+    "Visual": {
+      "additionalProperties": false,
+      "properties": {
+        "detail_dpi": {
+          "const": 300,
+          "default": 300,
+          "title": "Detail Dpi",
+          "type": "integer"
+        },
+        "dpi": {
+          "const": 150,
+          "default": 150,
+          "title": "Dpi",
+          "type": "integer"
+        },
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "max_figures_per_action": {
+          "default": 3,
+          "maximum": 3,
+          "minimum": 1,
+          "title": "Max Figures Per Action",
+          "type": "integer"
+        },
+        "max_image_bytes": {
+          "default": 8388608,
+          "exclusiveMinimum": 0,
+          "maximum": 8388608,
+          "title": "Max Image Bytes",
+          "type": "integer"
+        },
+        "max_image_pixels": {
+          "default": 6000000,
+          "exclusiveMinimum": 0,
+          "maximum": 6000000,
+          "title": "Max Image Pixels",
+          "type": "integer"
+        },
+        "max_images_per_figure": {
+          "default": 2,
+          "maximum": 6,
+          "minimum": 1,
+          "title": "Max Images Per Figure",
+          "type": "integer"
+        }
+      },
+      "title": "Visual",
+      "type": "object"
+    },
+    "Writing": {
+      "additionalProperties": false,
+      "properties": {
+        "max_expansion_rounds": {
+          "default": 1,
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Max Expansion Rounds",
+          "type": "integer"
+        },
+        "max_output_tokens": {
+          "default": 8192,
+          "exclusiveMinimum": 0,
+          "title": "Max Output Tokens",
+          "type": "integer"
+        },
+        "previous_context_characters": {
+          "default": 2400,
+          "minimum": 0,
+          "title": "Previous Context Characters",
+          "type": "integer"
+        },
+        "source_context_characters": {
+          "default": 12000,
+          "minimum": 0,
+          "title": "Source Context Characters",
+          "type": "integer"
+        },
+        "target_section_characters": {
+          "default": 1800,
+          "exclusiveMinimum": 0,
+          "title": "Target Section Characters",
+          "type": "integer"
+        }
+      },
+      "title": "Writing",
       "type": "object"
     }
   },

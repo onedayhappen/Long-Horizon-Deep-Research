@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "profile_id": "your-tested-vision-deployment",
+  "model": "your-vision-model",
+  "revision": "your-deployment-revision",
+  "supports_images": true,
+  "max_image_bytes": 8388608,
+  "max_image_pixels": 6000000,
+  "max_images": 6,
+  "max_request_bytes": 24000000
+}

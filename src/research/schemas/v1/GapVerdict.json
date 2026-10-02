@@ -1,0 +1,37 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "checked_refs": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Checked Refs",
+      "type": "array"
+    },
+    "gap_id": {
+      "title": "Gap Id",
+      "type": "string"
+    },
+    "reason": {
+      "minLength": 1,
+      "title": "Reason",
+      "type": "string"
+    },
+    "verdict": {
+      "enum": [
+        "pass",
+        "missing"
+      ],
+      "title": "Verdict",
+      "type": "string"
+    }
+  },
+  "required": [
+    "gap_id",
+    "verdict",
+    "reason",
+    "checked_refs"
+  ],
+  "title": "GapVerdict",
+  "type": "object"
+}

@@ -47,7 +47,7 @@ def invalidate_local(store, db, version_ids, cause_ids, requirements=()):
             continue
         # Imported evidence remains readable as a candidate. Support eligibility
         # is tracked on each binding, never inferred from blob availability.
-        if row['kind'] in {'claim', 'audit'}:
+        if row['kind'] in {'claim', 'audit', 'conflict_review', 'conflict', 'conflict_comparison', 'conflict_scan'}:
             db.execute("UPDATE entity_heads SET validity='needs_reaudit' WHERE kind=? AND id=? AND version=?", (row['kind'], row['id'], row['version']))
             rids.update(json.loads(row['payload_json']).get('requirement_ids', []))
     for rid in rids:

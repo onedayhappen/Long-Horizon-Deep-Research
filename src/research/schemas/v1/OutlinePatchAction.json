@@ -22,6 +22,13 @@
           "title": "Evidence Ids",
           "type": "array"
         },
+        "gap_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Gap Ids",
+          "type": "array"
+        },
         "id": {
           "minLength": 1,
           "title": "Id",
@@ -34,6 +41,12 @@
           "title": "Notes",
           "type": "array"
         },
+        "order": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Order",
+          "type": "integer"
+        },
         "parent_id": {
           "anyOf": [
             {
@@ -45,6 +58,11 @@
           ],
           "default": null,
           "title": "Parent Id"
+        },
+        "purpose": {
+          "default": "",
+          "title": "Purpose",
+          "type": "string"
         },
         "replaced_by": {
           "items": {
@@ -60,6 +78,11 @@
           "minItems": 1,
           "title": "Requirement Ids",
           "type": "array"
+        },
+        "research_question": {
+          "default": "",
+          "title": "Research Question",
+          "type": "string"
         },
         "title": {
           "minLength": 1,
@@ -78,6 +101,30 @@
     "OutlineOperation": {
       "additionalProperties": false,
       "properties": {
+        "after_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "After Id"
+        },
+        "before_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Before Id"
+        },
         "claim_ids": {
           "items": {
             "type": "string"
@@ -92,6 +139,41 @@
           "title": "Evidence Ids",
           "type": "array"
         },
+        "gap_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Gap Id"
+        },
+        "gap_kind": {
+          "default": "other",
+          "enum": [
+            "mechanism",
+            "comparison",
+            "condition",
+            "counterevidence",
+            "data",
+            "source",
+            "other"
+          ],
+          "title": "Gap Kind",
+          "type": "string"
+        },
+        "gap_priority": {
+          "default": "blocking",
+          "enum": [
+            "blocking",
+            "supplementary"
+          ],
+          "title": "Gap Priority",
+          "type": "string"
+        },
         "kind": {
           "enum": [
             "add",
@@ -102,7 +184,11 @@
             "bind_evidence",
             "add_counterview",
             "mark_gap",
-            "retire_node"
+            "retire_node",
+            "update_node",
+            "reorder",
+            "resolve_gap",
+            "reopen_gap"
           ],
           "title": "Kind",
           "type": "string"
@@ -118,6 +204,18 @@
           "title": "Nodes",
           "type": "array"
         },
+        "purpose": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Purpose"
+        },
         "reason": {
           "minLength": 1,
           "title": "Reason",
@@ -130,6 +228,35 @@
           "minItems": 1,
           "title": "Requirement Ids",
           "type": "array"
+        },
+        "research_question": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Research Question"
+        },
+        "resolution_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Resolution Refs",
+          "type": "array"
+        },
+        "resolution_status": {
+          "default": "resolved",
+          "enum": [
+            "resolved",
+            "accepted_unknown",
+            "deferred"
+          ],
+          "title": "Resolution Status",
+          "type": "string"
         },
         "target_node_ids": {
           "items": {
