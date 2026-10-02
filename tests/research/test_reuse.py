@@ -93,6 +93,9 @@ class ReuseAgent:
                          passed_check_ids=p['passed_check_ids'], missing_check_ids=p['missing_check_ids'], claim_version_ids=claims, investigation_refs=[])
         elif role == 'planner.next':
             value = dict(kind='terminate', coverage_refs=p['coverage_refs'], proposed_outcome='complete')
+        elif role == 'auditor.outline':
+            from scripts.research_review_fixture import outline_review_response
+            value = outline_review_response(p)
         elif role == 'writer.section':
             material = json.loads(p['section_material_json'])
             fact = dict(kind='factual', id='fact-' + p['section_id'], requirement_ids=['R1'], claim_version_ids=[material['claims'][0]['version_id']], evidence_ids=[material['evidence'][0]['id']])

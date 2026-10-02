@@ -72,6 +72,25 @@
       },
       "title": "Candidates",
       "type": "array"
+    },
+    "new_dimensions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "New Dimensions",
+      "type": "array"
+    },
+    "remaining_questions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Remaining Questions",
+      "type": "array"
+    },
+    "summary": {
+      "default": "",
+      "title": "Summary",
+      "type": "string"
     }
   },
   "required": [

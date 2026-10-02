@@ -11,7 +11,8 @@ from src.research.models import (
     QuestionSpaceAudit, SearchBiasVerdict, CandidateEvidenceBundle,
     EvidenceAuditVerdict, CounterAuditVerdict, CoverageProposal, DraftSection,
     ReportAudit,
-    BudgetSnapshot, OutlineOperation, OutlineNode, OutlineState,
+    BudgetSnapshot, OutlineOperation, OutlineNode, OutlineState, ResearchGap,
+    SourceSelection, GapVerdict, OutlineReview, InspectMaterialAction,
 )
 from src.research.visual_models import (DocumentMap, FigureArtifact, PDFRegion, VisualLocator, ReadFigure,
     FigureReadPlan, VisualClaimProposal, VisualObservationProposal, VisualAudit, VisionProfile)
@@ -23,6 +24,7 @@ MODELS = (ResearchConfig, ResearchContract, QuerySpec, SearchBatch, FetchRequest
           QuestionSpaceAudit, SearchBiasVerdict, CandidateEvidenceBundle,
           EvidenceAuditVerdict, CounterAuditVerdict, CoverageProposal, DraftSection,
           ReportAudit, BudgetSnapshot, OutlineOperation, OutlineNode, OutlineState,
+          ResearchGap, SourceSelection, GapVerdict, OutlineReview, InspectMaterialAction,
           ReuseSelection, ReusePolicy, ReuseAssessment, ReuseMappingProposal, SourceValidationResult, InvalidationRequest,
           DocumentMap, FigureArtifact, PDFRegion, VisualLocator, ReadFigure, FigureReadPlan, VisualClaimProposal,
           VisualObservationProposal, VisualAudit, VisionProfile)

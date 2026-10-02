@@ -36,7 +36,8 @@ def test_replay_search_patch_search_freeze_and_export(tmp_path):
     assert {s['outline_version'] for s in load(root/'report.json')['sections']}=={2}
     store=Store(root)
     assert store.status()['research_rounds']==2
-    assert len(list(store.db.execute("SELECT * FROM entity_versions WHERE kind='coverage'")))>=3
+    # Structural edits reuse coverage; only changed research creates assessments.
+    assert len(list(store.db.execute("SELECT * FROM entity_versions WHERE kind='coverage'")))==2
     before=store.db.execute('SELECT COUNT(*) FROM attempts').fetchone()[0];store.close()
     assert main(['resume','--run-dir',str(root)])==0
     store=Store(root);assert store.db.execute('SELECT COUNT(*) FROM attempts').fetchone()[0]==before;store.close()

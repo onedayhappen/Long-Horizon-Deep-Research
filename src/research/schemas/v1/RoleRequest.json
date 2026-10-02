@@ -123,7 +123,10 @@
         "researcher.read_figure",
         "auditor.visual",
         "auditor.visual_counter",
-        "vision.probe"
+        "vision.probe",
+        "researcher.select_sources",
+        "auditor.gap",
+        "auditor.outline"
       ],
       "title": "Role",
       "type": "string"

@@ -130,8 +130,8 @@ def test_add_split_and_move_cannot_create_fourth_level(tmp_path, operation):
     before = outline.model_dump()
     patch = OutlinePatchAction.model_validate(dict(base_outline_version=1, reason_refs=['e1'],
         operations=[dict(operation, reason='new evidence', requirement_ids=['R1'])]))
-    with pytest.raises(InvalidOutline, match='three section levels'):
-        apply_patch(outline, patch, contract, {'e1'}, set(), {'e1'})
+    with pytest.raises(InvalidOutline, match='maximum depth 3'):
+        apply_patch(outline, patch, contract, {'e1'}, set(), {'e1'}, max_depth=3)
     assert outline.model_dump() == before
 
 
@@ -141,8 +141,8 @@ def test_moving_subtree_checks_descendant_depth(tmp_path):
     outline.nodes.append(OutlineNode(id='branch', title='分支', parent_id='other', requirement_ids=['R1']))
     patch = OutlinePatchAction.model_validate(dict(base_outline_version=1, reason_refs=['e1'],
         operations=[dict(kind='move', node_id='child', target_parent_id='branch', reason='regroup', requirement_ids=['R1'])]))
-    with pytest.raises(InvalidOutline, match='three section levels'):
-        apply_patch(outline, patch, ResearchContract.model_validate(data), {'e1'}, set(), {'e1'})
+    with pytest.raises(InvalidOutline, match='maximum depth 3'):
+        apply_patch(outline, patch, ResearchContract.model_validate(data), {'e1'}, set(), {'e1'}, max_depth=3)
 
 
 @pytest.mark.parametrize('bindings, message', [({}, 'needs claim or evidence'), ({'claim_ids': ['missing']}, 'unknown claim/evidence')])

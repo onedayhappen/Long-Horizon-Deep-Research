@@ -71,6 +71,9 @@ def export_artifacts(store: Store) -> list[Path]:
     paths = []
     history = [dict(version=r['version'], version_id=r['version_id'], **json.loads(r['payload_json'])) for r in store.db.execute("SELECT * FROM entity_versions WHERE kind='outline' ORDER BY version")]
     outline = {'current': history[-1] if history else None, 'revision_count': max(0,len(history)-1), 'history': history}
+    for kind in ('research_progress', 'investigation', 'research_summary', 'gap_review', 'outline_review'):
+        outline[kind] = [dict(id=r['id'], **json.loads(r['payload_json'])) for r in store.db.execute(
+            "SELECT v.* FROM entity_versions v JOIN entity_heads h ON v.kind=h.kind AND v.id=h.id AND v.version=h.version WHERE v.kind=? AND h.validity='current' ORDER BY v.id", (kind,))]
     metadata['outline_version'] = history[-1].get('outline_version',history[-1]['version']) if history else None
     if history:
         current = OutlineState.model_validate({key: value for key, value in history[-1].items()

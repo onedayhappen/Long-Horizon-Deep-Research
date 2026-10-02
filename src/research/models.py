@@ -384,6 +384,10 @@ class SearchAction(StrictModel):
     query_plan: list[QuerySpec] = Field(min_length=1)
     acceptance_check_ids: list[str]
     max_external_calls: int = Field(gt=0)
+    target_node_ids: list[str] = Field(default_factory=list)
+    target_gap_ids: list[str] = Field(default_factory=list)
+    research_goal: str = ''
+    refresh_sources: bool = False
 
 
 class OutlinePatchAction(StrictModel):
@@ -403,6 +407,23 @@ class OutlineNode(StrictModel):
     active: bool = True
     notes: list[str] = Field(default_factory=list)
     replaced_by: list[str] = Field(default_factory=list)
+    research_question: str = ''
+    purpose: str = ''
+    order: int = Field(default=0, ge=0)
+    gap_ids: list[str] = Field(default_factory=list)
+
+
+class ResearchGap(StrictModel):
+    id: str = Field(min_length=1)
+    node_ids: list[str] = Field(min_length=1)
+    requirement_ids: list[str] = Field(min_length=1)
+    question: str = Field(min_length=1)
+    kind: Literal['mechanism', 'comparison', 'condition', 'counterevidence', 'data', 'source', 'other'] = 'other'
+    priority: Literal['blocking', 'supplementary'] = 'blocking'
+    status: Literal['open', 'investigating', 'resolved', 'accepted_unknown', 'deferred'] = 'open'
+    investigation_refs: list[str] = Field(default_factory=list)
+    resolution_refs: list[str] = Field(default_factory=list)
+    resolution_audit_id: str | None = None
 
 
 class OutlineState(StrictModel):
@@ -411,10 +432,11 @@ class OutlineState(StrictModel):
     nodes: list[OutlineNode] = Field(min_length=1)
     reason_refs: list[str] = Field(default_factory=list)
     operations: list[dict] = Field(default_factory=list)
+    gaps: list[ResearchGap] = Field(default_factory=list)
 
 
 class OutlineOperation(StrictModel):
-    kind: Literal["add", "split", "merge", "move", "narrow_claim", "bind_evidence", "add_counterview", "mark_gap", "retire_node"]
+    kind: Literal["add", "split", "merge", "move", "narrow_claim", "bind_evidence", "add_counterview", "mark_gap", "retire_node", "update_node", "reorder", "resolve_gap", "reopen_gap"]
     node_id: str
     target_parent_id: str | None = None
     title: str | None = None
@@ -425,6 +447,15 @@ class OutlineOperation(StrictModel):
     target_node_ids: list[str] = Field(default_factory=list)
     claim_ids: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    research_question: str | None = None
+    purpose: str | None = None
+    before_id: str | None = None
+    after_id: str | None = None
+    gap_id: str | None = None
+    gap_kind: Literal['mechanism', 'comparison', 'condition', 'counterevidence', 'data', 'source', 'other'] = 'other'
+    gap_priority: Literal['blocking', 'supplementary'] = 'blocking'
+    resolution_status: Literal['resolved', 'accepted_unknown', 'deferred'] = 'resolved'
+    resolution_refs: list[str] = Field(default_factory=list)
 
 
 class TerminateProposal(StrictModel):
@@ -433,11 +464,16 @@ class TerminateProposal(StrictModel):
     proposed_outcome: str
 
 
-ResearchAction = Annotated[SearchAction | OutlinePatchAction | TerminateProposal, Field(discriminator="kind")]
+class InspectMaterialAction(StrictModel):
+    kind: Literal['inspect_material'] = 'inspect_material'
+    summary_ids: list[str] = Field(min_length=1)
+
+
+ResearchAction = Annotated[SearchAction | OutlinePatchAction | TerminateProposal | InspectMaterialAction, Field(discriminator="kind")]
 
 
 class RoleRequest(StrictModel):
-    role: Literal["planner.initialize", "auditor.question_space", "planner.next", "researcher.extract", "auditor.evidence", "auditor.counter_entailment", "auditor.provenance", "auditor.conflict", "auditor.coverage", "auditor.search_bias", "writer.section", "auditor.report", "planner.reuse_map", "researcher.inspect_figures", "researcher.read_figure", "auditor.visual", "auditor.visual_counter", "vision.probe"]
+    role: Literal["planner.initialize", "auditor.question_space", "planner.next", "researcher.extract", "auditor.evidence", "auditor.counter_entailment", "auditor.provenance", "auditor.conflict", "auditor.coverage", "auditor.search_bias", "writer.section", "auditor.report", "planner.reuse_map", "researcher.inspect_figures", "researcher.read_figure", "auditor.visual", "auditor.visual_counter", "vision.probe", "researcher.select_sources", "auditor.gap", "auditor.outline"]
     logical_action_key: str
     input_manifest_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
     contract_version: int = Field(gt=0)
@@ -492,6 +528,9 @@ class QuestionSpaceAudit(StrictModel):
     review_status: Literal["pass", "missing", "needs_clarification"]
     dimensions_checked: list[str] = Field(min_length=1)
     missing_questions: list[str]
+    recommended_action: Literal['research', 'refine', 'keep', 'ready'] = 'keep'
+    reason: str = ''
+    new_dimensions: list[str] = Field(default_factory=list)
 
 
 class SearchBiasVerdict(StrictModel):
@@ -513,6 +552,37 @@ class CandidateEvidence(StrictModel):
 
 class CandidateEvidenceBundle(StrictModel):
     candidates: list[CandidateEvidence]
+    summary: str = ''
+    new_dimensions: list[str] = Field(default_factory=list)
+    remaining_questions: list[str] = Field(default_factory=list)
+
+
+class SourceSelection(StrictModel):
+    selected_hit_ids: list[str]
+    reasons: dict[str, str]
+
+
+class GapVerdict(StrictModel):
+    gap_id: str
+    verdict: Literal['pass', 'missing']
+    reason: str = Field(min_length=1)
+    checked_refs: list[str]
+
+
+class NodeReview(StrictModel):
+    node_id: str
+    disposition: Literal['supported', 'overview', 'accepted_unknown', 'missing']
+    reason: str = Field(min_length=1)
+    claim_version_ids: list[str] = Field(default_factory=list)
+
+
+class OutlineReview(StrictModel):
+    outline_version: int
+    nodes: list[NodeReview]
+    missing_dimensions: list[str]
+    unincorporated_summary_ids: list[str]
+    decision: Literal['research', 'refine', 'ready']
+    reason: str = Field(min_length=1)
 
 
 class EvidenceAuditVerdict(StrictModel):

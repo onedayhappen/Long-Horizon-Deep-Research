@@ -1,0 +1,94 @@
+{
+  "$defs": {
+    "NodeReview": {
+      "additionalProperties": false,
+      "properties": {
+        "claim_version_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Claim Version Ids",
+          "type": "array"
+        },
+        "disposition": {
+          "enum": [
+            "supported",
+            "overview",
+            "accepted_unknown",
+            "missing"
+          ],
+          "title": "Disposition",
+          "type": "string"
+        },
+        "node_id": {
+          "title": "Node Id",
+          "type": "string"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "node_id",
+        "disposition",
+        "reason"
+      ],
+      "title": "NodeReview",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "decision": {
+      "enum": [
+        "research",
+        "refine",
+        "ready"
+      ],
+      "title": "Decision",
+      "type": "string"
+    },
+    "missing_dimensions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Missing Dimensions",
+      "type": "array"
+    },
+    "nodes": {
+      "items": {
+        "$ref": "#/$defs/NodeReview"
+      },
+      "title": "Nodes",
+      "type": "array"
+    },
+    "outline_version": {
+      "title": "Outline Version",
+      "type": "integer"
+    },
+    "reason": {
+      "minLength": 1,
+      "title": "Reason",
+      "type": "string"
+    },
+    "unincorporated_summary_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Unincorporated Summary Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "outline_version",
+    "nodes",
+    "missing_dimensions",
+    "unincorporated_summary_ids",
+    "decision",
+    "reason"
+  ],
+  "title": "OutlineReview",
+  "type": "object"
+}

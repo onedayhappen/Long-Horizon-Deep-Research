@@ -24,7 +24,7 @@ Deep Research is an evidence based research and report workflow. Define a questi
 
 - **Research contract:** A JSON contract defines the question, scope, required answers, evidence checks, and report structure. TOML controls execution mode and budgets.
 - **Traceable evidence:** Source snapshots, text locations, claims, review decisions, and citation relationships are stored with the run.
-- **Iterative outline:** Start with top-level questions, then develop evidence-backed second- and third-level sections as research uncovers distinct topics. Parents summarize; child sections explain scoped evidence and limits. See the [outline design](docs/research/outline.md).
+- **Iterative outline:** Start with top-level questions and develop subtopics from evidence. Chapter gaps drive targeted investigation and require reviewed closure; sibling ordering, bounded research summaries and a final outline review guide writing. See the [outline design](docs/research/outline.md).
 - **Report review:** Section and whole report checks can request targeted revisions or send a gap back to the research stage.
 - **Explicit reuse:** `--reuse-from` imports a frozen set of source materials into a new run. Candidates require purpose-specific time checks, document status validation and local audits. Imports recover after interruption; authorized ancestor invalidations are consumed before use.
 - **Resumable runs:** SQLite stores state, budgets, and events. Reports and evidence can be exported after a run.
@@ -110,6 +110,19 @@ A run directory typically contains:
 Run directories can contain source text, model output, and other sensitive material. They are excluded from Git by default.
 
 ## Long-form writing
+
+Optional outline-planning settings (defaults shown):
+
+```toml
+[research.planning]
+max_depth = 4
+context_characters = 48000
+summary_characters = 2400
+max_sources_per_action = 5
+closing_reserve_calls = 4
+```
+
+Depth is a ceiling, not a heading quota. Planning uses the full outline, audited claim catalog and bounded summaries with explicit omitted IDs for retrieval. The character budget is not a model token limit; tune it for the provider. Required context that exceeds it stops with `incomplete_context` instead of silently dropping gaps. Identical URLs reuse run-local fetches; changed goals trigger fresh extraction, and `refresh_sources=true` requests fresh bytes. Research reserves closing calls, and final review also checks the remaining writing calls.
 
 The writer follows [WebWeaver's section-wise retrieval and writing approach](https://arxiv.org/html/2509.13312v2#S3.SS3). Each section receives the frozen outline, audited evidence, bounded local source context, and a bounded excerpt of preceding prose. Source context and previous prose do not authorize additional factual claims.
 

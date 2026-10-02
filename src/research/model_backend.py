@@ -27,6 +27,7 @@ def response_schema(name: str, version: int) -> dict:
         models.CandidateEvidenceBundle, models.EvidenceAuditVerdict,
         models.CounterAuditVerdict, models.SearchBiasVerdict,
         models.CoverageProposal, models.DraftSection, models.ReportAudit,
+        models.SourceSelection, models.GapVerdict, models.OutlineReview,
         ReuseMappingProposal,
     )}
     from .visual_models import FigureReadPlan, VisualClaimProposal, VisualAudit, VisionProbeResult

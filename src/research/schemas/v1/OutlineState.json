@@ -22,6 +22,13 @@
           "title": "Evidence Ids",
           "type": "array"
         },
+        "gap_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Gap Ids",
+          "type": "array"
+        },
         "id": {
           "minLength": 1,
           "title": "Id",
@@ -34,6 +41,12 @@
           "title": "Notes",
           "type": "array"
         },
+        "order": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Order",
+          "type": "integer"
+        },
         "parent_id": {
           "anyOf": [
             {
@@ -45,6 +58,11 @@
           ],
           "default": null,
           "title": "Parent Id"
+        },
+        "purpose": {
+          "default": "",
+          "title": "Purpose",
+          "type": "string"
         },
         "replaced_by": {
           "items": {
@@ -61,6 +79,11 @@
           "title": "Requirement Ids",
           "type": "array"
         },
+        "research_question": {
+          "default": "",
+          "title": "Research Question",
+          "type": "string"
+        },
         "title": {
           "minLength": 1,
           "title": "Title",
@@ -74,10 +97,117 @@
       ],
       "title": "OutlineNode",
       "type": "object"
+    },
+    "ResearchGap": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "investigation_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Investigation Refs",
+          "type": "array"
+        },
+        "kind": {
+          "default": "other",
+          "enum": [
+            "mechanism",
+            "comparison",
+            "condition",
+            "counterevidence",
+            "data",
+            "source",
+            "other"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "node_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Node Ids",
+          "type": "array"
+        },
+        "priority": {
+          "default": "blocking",
+          "enum": [
+            "blocking",
+            "supplementary"
+          ],
+          "title": "Priority",
+          "type": "string"
+        },
+        "question": {
+          "minLength": 1,
+          "title": "Question",
+          "type": "string"
+        },
+        "requirement_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Requirement Ids",
+          "type": "array"
+        },
+        "resolution_audit_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resolution Audit Id"
+        },
+        "resolution_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Resolution Refs",
+          "type": "array"
+        },
+        "status": {
+          "default": "open",
+          "enum": [
+            "open",
+            "investigating",
+            "resolved",
+            "accepted_unknown",
+            "deferred"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "node_ids",
+        "requirement_ids",
+        "question"
+      ],
+      "title": "ResearchGap",
+      "type": "object"
     }
   },
   "additionalProperties": false,
   "properties": {
+    "gaps": {
+      "items": {
+        "$ref": "#/$defs/ResearchGap"
+      },
+      "title": "Gaps",
+      "type": "array"
+    },
     "nodes": {
       "items": {
         "$ref": "#/$defs/OutlineNode"
@@ -88,7 +218,6 @@
     },
     "operations": {
       "items": {
-        "additionalProperties": true,
         "type": "object"
       },
       "title": "Operations",

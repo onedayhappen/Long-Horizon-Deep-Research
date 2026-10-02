@@ -1,0 +1,24 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "const": "inspect_material",
+      "default": "inspect_material",
+      "title": "Kind",
+      "type": "string"
+    },
+    "summary_ids": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Summary Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "summary_ids"
+  ],
+  "title": "InspectMaterialAction",
+  "type": "object"
+}

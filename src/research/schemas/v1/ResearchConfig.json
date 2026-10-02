@@ -311,8 +311,8 @@
         },
         "temperature": {
           "default": 0.0,
-          "maximum": 2,
-          "minimum": 0,
+          "maximum": 2.0,
+          "minimum": 0.0,
           "title": "Temperature",
           "type": "number"
         },
@@ -339,6 +339,44 @@
       "title": "Model",
       "type": "object"
     },
+    "Planning": {
+      "additionalProperties": false,
+      "properties": {
+        "closing_reserve_calls": {
+          "default": 4,
+          "minimum": 1,
+          "title": "Closing Reserve Calls",
+          "type": "integer"
+        },
+        "context_characters": {
+          "default": 48000,
+          "minimum": 4000,
+          "title": "Context Characters",
+          "type": "integer"
+        },
+        "max_depth": {
+          "default": 4,
+          "maximum": 5,
+          "minimum": 1,
+          "title": "Max Depth",
+          "type": "integer"
+        },
+        "max_sources_per_action": {
+          "default": 5,
+          "minimum": 1,
+          "title": "Max Sources Per Action",
+          "type": "integer"
+        },
+        "summary_characters": {
+          "default": 2400,
+          "minimum": 200,
+          "title": "Summary Characters",
+          "type": "integer"
+        }
+      },
+      "title": "Planning",
+      "type": "object"
+    },
     "Research": {
       "additionalProperties": false,
       "properties": {
@@ -359,6 +397,9 @@
         },
         "model": {
           "$ref": "#/$defs/Model"
+        },
+        "planning": {
+          "$ref": "#/$defs/Planning"
         },
         "runtime": {
           "$ref": "#/$defs/Runtime"

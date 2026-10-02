@@ -107,6 +107,14 @@ class Writing(StrictModel):
     max_expansion_rounds: int = Field(default=1, ge=0, le=2)
 
 
+class Planning(StrictModel):
+    max_depth: int = Field(default=4, ge=1, le=5)
+    context_characters: int = Field(default=48000, ge=4000)
+    summary_characters: int = Field(default=2400, ge=200)
+    max_sources_per_action: int = Field(default=5, ge=1)
+    closing_reserve_calls: int = Field(default=4, ge=1)
+
+
 class Research(StrictModel):
     execution: Execution
     runtime: Runtime = Field(default_factory=Runtime)
@@ -118,6 +126,7 @@ class Research(StrictModel):
     audit: Audit = Field(default_factory=Audit)
     stopping: Stopping = Field(default_factory=Stopping)
     writing: Writing = Field(default_factory=Writing)
+    planning: Planning = Field(default_factory=Planning)
     visual: "Visual" = Field(default_factory=lambda: Visual())
 
 

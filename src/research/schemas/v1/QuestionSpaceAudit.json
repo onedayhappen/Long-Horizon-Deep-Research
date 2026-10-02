@@ -16,6 +16,29 @@
       "title": "Missing Questions",
       "type": "array"
     },
+    "new_dimensions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "New Dimensions",
+      "type": "array"
+    },
+    "reason": {
+      "default": "",
+      "title": "Reason",
+      "type": "string"
+    },
+    "recommended_action": {
+      "default": "keep",
+      "enum": [
+        "research",
+        "refine",
+        "keep",
+        "ready"
+      ],
+      "title": "Recommended Action",
+      "type": "string"
+    },
     "review_status": {
       "enum": [
         "pass",

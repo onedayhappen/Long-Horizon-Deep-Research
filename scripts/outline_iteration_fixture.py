@@ -84,6 +84,16 @@ class ScenarioAgent:
                 paragraphs=[dict(id=section+'-p',sentences=[dict(id=section+'-s',text=text,fact_ids=[f['id'] for f in facts])])],facts=facts,open_questions=[])
         elif role=='auditor.report':
             result=dict(report_hash=p['report_hash'],findings=[],checked_fact_ids=p['fact_ids'],checked_section_ids=p['section_ids'],answered_requirement_ids=['R1'])
+        elif role == 'auditor.outline':
+            from scripts.research_review_fixture import outline_review_response
+            result = outline_review_response(p)
+        elif role == 'auditor.gap':
+            result = dict(gap_id=json.loads(p['gap_json'])['id'], verdict='pass',
+                          reason='Scripted fictional gap review.', checked_refs=p['resolution_refs'])
+        elif role == 'researcher.select_sources':
+            hits = json.loads(p['candidates_json'])
+            result = dict(selected_hit_ids=[h['hit_id'] for h in hits[:p['max_sources']]],
+                          reasons={h['hit_id']: 'Fictional ranked selection.' for h in hits})
         else:
             raise AssertionError((role,key))
         response=RoleResponse(raw_text=canonical(result).decode(),finish_reason='stop',provider_request_id=None,

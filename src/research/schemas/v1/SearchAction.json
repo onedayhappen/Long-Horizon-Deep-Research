@@ -103,6 +103,30 @@
     "question_id": {
       "title": "Question Id",
       "type": "string"
+    },
+    "refresh_sources": {
+      "default": false,
+      "title": "Refresh Sources",
+      "type": "boolean"
+    },
+    "research_goal": {
+      "default": "",
+      "title": "Research Goal",
+      "type": "string"
+    },
+    "target_gap_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Target Gap Ids",
+      "type": "array"
+    },
+    "target_node_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Target Node Ids",
+      "type": "array"
     }
   },
   "required": [
